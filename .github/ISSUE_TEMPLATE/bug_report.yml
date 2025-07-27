@@ -1,0 +1,39 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in the Merit Badge Manager
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Please provide details to help us reproduce and fix the issue.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened?
+      placeholder: Describe the bug in detail.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the bug?
+      placeholder: List the steps to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references here.
+      placeholder: Optional
