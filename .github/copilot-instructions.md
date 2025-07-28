@@ -1,7 +1,14 @@
 # GitHub Copilot Instructions
 
 ## Specifications
-See the [specification document](spec.md) for detailed requirements and architecture.
+See the [specification document](../spec.md) for detailed requirements and architecture.
+
+## When starting new terminal Sessions for Copilot:
+- Always verify that the new terminal session is finished initializing before running any commands.
+- Ensure that the Python Virtual Environment is created and activated before running the application or Python scripts, tests, and commands.
+- If the virtual environment is not activated, run `source venv/bin/activate` to activate it.
+- If the virtual environment does not exist, create it using `python3.12 -m venv venv`.
+- Install dependencies using `pip install -r requirements.txt`.
 
 ## Always:
 - Follow the coding standards and best practices outlined in the specification document.
@@ -15,8 +22,10 @@ Include issue number in all commit messages.
 - Ensure the Python Virtual Environment is created and activated before running the application or Python scripts, tests and commands.
 - Add new dependencies to the `requirements.txt` file and ensure they are installed in the virtual environment.
 - Generate change scripts for database schema changes and ensure they are applied to the SQLite database.
+- Update compatible dependencies that are not breaking changes.
+- Label all Github issues that are sub-issues of Feature requests as `user story`.
 
-## Never
+## Never:
 - Never include any passwords, API keys, or sensitive information in the codebase except in secure configuration files that are not committed to the repository.
 - Never hard-code values that should be configurable.
 - Never commit code that does not pass the automated tests.

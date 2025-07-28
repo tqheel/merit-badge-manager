@@ -1,0 +1,53 @@
+name: CSV Data Import Module
+description: Core data import functionality for Merit Badge In-Progress Reports and Troop Roster Files
+labels: [enhancement, user story]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## CSV Data Import Module
+        Core functionality to import and process CSV data from Scoutbook exports for the Merit Badge Counselor Management Application.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are you trying to solve?
+      placeholder: The Merit Badge Counselor Management Application requires robust data import capabilities to process CSV files exported from Scoutbook. These files have distinct formats and challenges - Merit Badge In-Progress Reports contain Scout assignments with text-based MBC names that require fuzzy matching, while Troop Roster Files have complex structures with separate adult and youth sections, index columns, and varying column layouts that need specialized parsing and cleaning logic.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like to see this solved?
+      placeholder: Develop a modular CSV data import system with specialized parsers for each data source. Implement data cleaning algorithms to handle structural inconsistencies, create fuzzy name matching capabilities for MBC identification, and establish a standardized data pipeline that transforms raw CSV imports into clean, structured data ready for database insertion. The module will include validation, error handling, and logging to ensure data integrity throughout the import process.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references here.
+      placeholder: |
+        Technical Requirements:
+        - Merit Badge In-Progress Report CSV: Scout info with Member ID, merit badge details, assigned MBC name (text only)
+        - Troop Roster File CSV: Adult/youth sections with different column structures, index columns to remove
+        - Data cleaning: Handle empty rows, section headers ("ADULT MEMBERS", "YOUTH MEMBERS")
+        - Fuzzy matching algorithm for MBC name resolution against roster data
+        - Python 3.12 implementation with virtual environment dependency management
+        - SQLite database integration for processed data storage
+        - Comprehensive error handling and logging
+        - Test coverage for all import scenarios
+        
+        Architecture Components:
+        - Base CSV parser class with common functionality
+        - Specialized parsers for each data source type
+        - Data validation and cleaning utilities
+        - Name matching algorithms for MBC resolution
+        - Database integration layer for processed data
+        
+        Compliance:
+        - Follow coding standards from .github/copilot-instructions.md
+        - No PII or Troop data in codebase, tests, or documentation
+        - Modular, reusable code with descriptive naming
+        - Include comprehensive test cases

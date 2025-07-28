@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pydantic
+PyYAML
+aiohttp
+aiofiles
+python-dotenv

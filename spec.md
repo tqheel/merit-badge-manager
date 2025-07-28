@@ -51,7 +51,7 @@ This document specifies the requirements and architecture for the Scouting Ameri
 - SQLite database
 - Microsoft Excel libraries for export
 - No authentication (local app)
-- MCP server for Copilot integration
+- MCP server for Copilot integration of queries concerning Troop dataand for the creation of GitHub Issues using the appropriate YAML template as defined in the .github/ISSUE_TEMPLATE directory.
 - GitHub Issues for work item management (issues must use the appropriate template)
 - Automated test case generation for all GitHub issues
 

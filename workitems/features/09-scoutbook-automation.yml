@@ -1,0 +1,41 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for the Merit Badge Manager
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+        Please describe the feature or enhancement you would like to see.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are you trying to solve?
+      placeholder: Future automation enhancements include Playwright-based automation for downloading CSV files from Scoutbook, automated report generation, and Google account authentication. Since there's no API access to Scoutbook, web scraping and automation will be required for data synchronization.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like to see this solved?
+      placeholder: Implement Playwright-based web automation that can securely authenticate with Google accounts, navigate Scoutbook interfaces, download required CSV reports, and trigger automated report generation. Include robust error handling, security measures for credential management, and scheduling capabilities for regular data updates.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references here.
+      placeholder: |
+        Key requirements:
+        - Playwright-based web automation for Scoutbook
+        - Secure Google account authentication
+        - Automated CSV download from Scoutbook
+        - Automated report generation and scheduling
+        - Robust error handling and retry logic
+        - Secure credential management (no hardcoded secrets)
+        - Integration with existing data import systems
+        - Configurable automation schedules
+        - Follow security requirements and coding standards

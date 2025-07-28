@@ -1,0 +1,41 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for the Merit Badge Manager
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+        Please describe the feature or enhancement you would like to see.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are you trying to solve?
+      placeholder: Future enhancement planning calls for a browser-based web application that provides an intuitive UI for data viewing, editing, assignment management, and MBC workload dashboards. The current system will be command-line based but needs a roadmap for web interface development.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like to see this solved?
+      placeholder: Design and implement a modern web application interface that provides intuitive data viewing and editing capabilities, MBC assignment interfaces, task lists for Scoutbook entry preparation, and comprehensive MBC workload dashboards. The web interface should integrate seamlessly with the existing backend systems.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references here.
+      placeholder: |
+        Key requirements:
+        - Browser-based UI for cross-platform access
+        - Data viewing and editing interfaces
+        - MBC assignment management interface
+        - Task list generation for Scoutbook entry
+        - MBC workload dashboard and analytics
+        - Integration with existing database and reporting systems
+        - Responsive design for mobile and desktop
+        - Security considerations for local deployment
+        - Follow coding standards and include comprehensive tests
