@@ -13,23 +13,30 @@ sys.path.insert(0, str(project_root))
 
 def test_imports():
     """Test that all required modules can be imported."""
-    try:
-        # Test basic imports (these should work even without dependencies installed)
-        import json
-        import pathlib
-        print("✅ Basic Python modules imported successfully")
-        
-        # Test if we can load the server module structure
-        from mcp_server import main
-        print("✅ MCP server module structure is valid")
-        
-        return True
-    except ImportError as e:
-        print(f"❌ Import error: {e}")
-        return False
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        return False
+    # Test basic imports (these should work even without dependencies installed)
+    import json
+    import pathlib
+    print("✅ Basic Python modules imported successfully")
+    
+    # Test if we can load the server module structure
+    from mcp_server import main
+    print("✅ MCP server module structure is valid")
+
+def test_close_issue_request_model():
+    """Test that the CloseIssueRequest model is properly defined."""
+    from mcp_server.main import CloseIssueRequest
+    
+    # Test valid request with required fields
+    request1 = CloseIssueRequest(issue_number=123)
+    assert request1.issue_number == 123
+    assert request1.reason == "completed"  # default value
+    print("✅ CloseIssueRequest model with defaults works correctly")
+    
+    # Test request with custom reason
+    request2 = CloseIssueRequest(issue_number=456, reason="not_planned")
+    assert request2.issue_number == 456
+    assert request2.reason == "not_planned"
+    print("✅ CloseIssueRequest model with custom reason works correctly")
 
 def test_directory_structure():
     """Test that required directories exist."""
@@ -42,16 +49,10 @@ def test_directory_structure():
         "venv"  # Updated to check for venv instead of .venv
     ]
     
-    all_exist = True
     for dir_path in required_dirs:
         full_path = base_dir / dir_path
-        if full_path.exists():
-            print(f"✅ Directory exists: {dir_path}")
-        else:
-            print(f"❌ Directory missing: {dir_path}")
-            all_exist = False
-    
-    return all_exist
+        assert full_path.exists(), f"Directory missing: {dir_path}"
+        print(f"✅ Directory exists: {dir_path}")
 
 def test_configuration_files():
     """Test that configuration files exist."""
@@ -62,16 +63,10 @@ def test_configuration_files():
         "requirements.txt"
     ]
     
-    all_exist = True
     for file_path in config_files:
         full_path = base_dir / file_path
-        if full_path.exists():
-            print(f"✅ Config file exists: {file_path}")
-        else:
-            print(f"❌ Config file missing: {file_path}")
-            all_exist = False
-    
-    return all_exist
+        assert full_path.exists(), f"Config file missing: {file_path}"
+        print(f"✅ Config file exists: {file_path}")
 
 def main():
     """Run all tests."""
@@ -81,16 +76,18 @@ def main():
     tests = [
         ("Directory Structure", test_directory_structure),
         ("Configuration Files", test_configuration_files),
-        ("Module Imports", test_imports)
+        ("Module Imports", test_imports),
+        ("Close Issue Request Model", test_close_issue_request_model)
     ]
     
     all_passed = True
     for test_name, test_func in tests:
         print(f"\n🧪 Testing {test_name}...")
-        if test_func():
+        try:
+            test_func()
             print(f"✅ {test_name} test passed")
-        else:
-            print(f"❌ {test_name} test failed")
+        except Exception as e:
+            print(f"❌ {test_name} test failed: {e}")
             all_passed = False
     
     print("\n" + "=" * 50)

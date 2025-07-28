@@ -50,6 +50,10 @@ class GitHubIssueData(BaseModel):
     body: str
     labels: list[str]
 
+class CloseIssueRequest(BaseModel):
+    issue_number: int
+    reason: Optional[str] = "completed"
+
 # Helper functions
 async def load_workitem_yml(yml_filename: str, workitem_type: str = "feature") -> Dict[str, Any]:
     """Load and parse a workitem YAML file (feature or bug)."""
@@ -177,6 +181,43 @@ async def create_github_issue(issue_data: GitHubIssueData) -> Dict[str, Any]:
                     detail=f"Failed to create GitHub issue: {error_text}"
                 )
 
+async def close_github_issue(issue_number: int, reason: str = "completed") -> Dict[str, Any]:
+    """Close a GitHub issue using the GitHub API."""
+    if not GITHUB_TOKEN:
+        raise HTTPException(status_code=500, detail="GitHub token not configured")
+    
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{issue_number}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json"
+    }
+    
+    # Validate reason parameter
+    if reason not in ["completed", "not_planned"]:
+        reason = "completed"
+    
+    payload = {
+        "state": "closed",
+        "state_reason": reason
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.patch(url, json=payload, headers=headers) as response:
+            if response.status == 200:
+                return await response.json()
+            elif response.status == 404:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"GitHub issue #{issue_number} not found"
+                )
+            else:
+                error_text = await response.text()
+                raise HTTPException(
+                    status_code=response.status,
+                    detail=f"Failed to close GitHub issue #{issue_number}: {error_text}"
+                )
+
 async def move_workitem_to_published(yml_filename: str, workitem_type: str = "feature") -> bool:
     """Move the workitem YAML file to the published directory."""
     if workitem_type == "feature":
@@ -270,6 +311,33 @@ async def publish_bug_to_github(request: PublishBugRequest):
                 "title": github_response.get("title")
             },
             "published_file": str(PUBLISHED_BUGS_DIR / request.yml_filename)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@app.post("/close-issue")
+async def close_github_issue_endpoint(request: CloseIssueRequest):
+    """
+    Close a GitHub issue by issue number.
+    """
+    try:
+        # Close the GitHub issue
+        github_response = await close_github_issue(request.issue_number, request.reason)
+        
+        return {
+            "message": f"GitHub issue #{request.issue_number} successfully closed",
+            "github_issue": {
+                "id": github_response.get("id"),
+                "number": github_response.get("number"),
+                "state": github_response.get("state"),
+                "state_reason": github_response.get("state_reason"),
+                "url": github_response.get("html_url"),
+                "title": github_response.get("title"),
+                "closed_at": github_response.get("closed_at")
+            }
         }
         
     except HTTPException:
@@ -397,6 +465,74 @@ async def health_check():
         "bugs_dir_exists": BUGS_DIR.exists(),
         "published_features_dir_exists": PUBLISHED_FEATURES_DIR.exists(),
         "published_bugs_dir_exists": PUBLISHED_BUGS_DIR.exists()
+    }
+
+@app.get("/endpoints")
+async def list_endpoints():
+    """List all available API endpoints."""
+    return {
+        "endpoints": [
+            {
+                "path": "/",
+                "method": "GET",
+                "description": "Root endpoint"
+            },
+            {
+                "path": "/health",
+                "method": "GET", 
+                "description": "Health check endpoint"
+            },
+            {
+                "path": "/endpoints",
+                "method": "GET",
+                "description": "List all available endpoints"
+            },
+            {
+                "path": "/publish-feature",
+                "method": "POST",
+                "description": "Publish a feature YAML file as a GitHub issue"
+            },
+            {
+                "path": "/publish-bug", 
+                "method": "POST",
+                "description": "Publish a bug YAML file as a GitHub issue"
+            },
+            {
+                "path": "/close-issue",
+                "method": "POST", 
+                "description": "Close a GitHub issue by issue number"
+            },
+            {
+                "path": "/features",
+                "method": "GET",
+                "description": "List all unpublished feature YAML files"
+            },
+            {
+                "path": "/bugs",
+                "method": "GET",
+                "description": "List all unpublished bug YAML files"
+            },
+            {
+                "path": "/published-features",
+                "method": "GET",
+                "description": "List all published feature YAML files"
+            },
+            {
+                "path": "/published-bugs",
+                "method": "GET",
+                "description": "List all published bug YAML files"
+            },
+            {
+                "path": "/feature/{yml_filename}",
+                "method": "GET",
+                "description": "Get details of a specific feature YAML file"
+            },
+            {
+                "path": "/bug/{yml_filename}",
+                "method": "GET",
+                "description": "Get details of a specific bug YAML file"
+            }
+        ]
     }
 
 
