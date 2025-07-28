@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 MCP server for Merit Badge Manager with GitHub integration following Anthropic schema and project specification.
 """
@@ -7,8 +8,11 @@ import shutil
 import yaml
 import aiohttp
 import aiofiles
+import json
+import sys
+import asyncio
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -28,9 +32,237 @@ BUGS_DIR = WORKITEMS_DIR / "bugs"
 PUBLISHED_FEATURES_DIR = WORKITEMS_DIR / "published" / "features"
 PUBLISHED_BUGS_DIR = WORKITEMS_DIR / "published" / "bugs"
 
+# MCP Protocol Models
+class MCPRequest(BaseModel):
+    method: str
+    params: Dict[str, Any] = {}
+    id: Optional[str] = None
+
+class MCPResponse(BaseModel):
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[Dict[str, Any]] = None
+    id: Optional[str] = None
+
+# MCP Protocol Handlers
+@app.post("/")
+async def mcp_handler(request: Request):
+    """Handle MCP protocol requests."""
+    try:
+        body = await request.json()
+        mcp_request = MCPRequest(**body)
+        
+        if mcp_request.method == "initialize":
+            return handle_initialize(mcp_request)
+        elif mcp_request.method == "notifications/initialized":
+            return handle_initialized(mcp_request)
+        elif mcp_request.method == "tools/list":
+            return handle_tools_list(mcp_request)
+        elif mcp_request.method == "tools/call":
+            return handle_tools_call(mcp_request)
+        else:
+            return MCPResponse(
+                error={"code": -32601, "message": f"Method not found: {mcp_request.method}"},
+                id=mcp_request.id
+            ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": f"Internal error: {str(e)}"},
+            id=getattr(request, 'id', None)
+        ).model_dump()
+
+def handle_initialize(request: MCPRequest) -> Dict[str, Any]:
+    """Handle MCP initialize request."""
+    return MCPResponse(
+        result={
+            "protocolVersion": "2024-11-05",
+            "capabilities": {
+                "tools": {
+                    "listChanged": False
+                }
+            },
+            "serverInfo": {
+                "name": "Merit Badge Manager MCP Server",
+                "version": "0.1.0"
+            }
+        },
+        id=request.id
+    ).model_dump()
+
+def handle_initialized(request: MCPRequest) -> Dict[str, Any]:
+    """Handle MCP initialized notification."""
+    # This is a notification, no response needed
+    return {}
+
+def handle_tools_list(request: MCPRequest) -> Dict[str, Any]:
+    """Handle MCP tools/list request."""
+    tools = [
+        {
+            "name": "publish_feature",
+            "description": "Publish a feature YAML file as a GitHub issue",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "yml_filename": {
+                        "type": "string",
+                        "description": "The YAML filename to publish"
+                    }
+                },
+                "required": ["yml_filename"]
+            }
+        },
+        {
+            "name": "list_features",
+            "description": "List all unpublished feature YAML files",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        {
+            "name": "close_issue",
+            "description": "Close a GitHub issue by issue number",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "issue_number": {
+                        "type": "integer",
+                        "description": "The GitHub issue number to close"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Reason for closing (completed or not_planned)",
+                        "enum": ["completed", "not_planned"],
+                        "default": "completed"
+                    }
+                },
+                "required": ["issue_number"]
+            }
+        }
+    ]
+    
+    return MCPResponse(
+        result={"tools": tools},
+        id=request.id
+    ).model_dump()
+
+async def handle_tools_call(request: MCPRequest) -> Dict[str, Any]:
+    """Handle MCP tools/call request."""
+    try:
+        tool_name = request.params.get("name")
+        arguments = request.params.get("arguments", {})
+        
+        if tool_name == "publish_feature":
+            return await mcp_publish_feature(arguments, request.id)
+        elif tool_name == "list_features":
+            return await mcp_list_features(arguments, request.id)
+        elif tool_name == "close_issue":
+            return await mcp_close_issue(arguments, request.id)
+        else:
+            return MCPResponse(
+                error={"code": -32601, "message": f"Tool not found: {tool_name}"},
+                id=request.id
+            ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": f"Tool execution error: {str(e)}"},
+            id=request.id
+        ).model_dump()
+
+async def mcp_publish_feature(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for publish feature functionality."""
+    try:
+        yml_filename = arguments.get("yml_filename")
+        if not yml_filename:
+            return MCPResponse(
+                error={"code": -32602, "message": "Missing required parameter: yml_filename"},
+                id=request_id
+            ).model_dump()
+        
+        # Use existing publish feature logic
+        feature_data = await load_feature_yml(yml_filename)
+        issue_data = convert_yml_to_github_issue(feature_data)
+        github_response = await create_github_issue(issue_data)
+        await move_feature_to_published(yml_filename)
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Successfully published feature '{yml_filename}' to GitHub issue #{github_response.get('number')}"
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
+async def mcp_list_features(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for list features functionality."""
+    try:
+        if not FEATURES_DIR.exists():
+            features = []
+        else:
+            features = [f.name for f in FEATURES_DIR.glob("*.yml")]
+        
+        feature_list = "\n".join(f"- {feature}" for feature in features) if features else "No unpublished features found."
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Unpublished Features:\n{feature_list}"
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
+async def mcp_close_issue(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for close issue functionality."""
+    try:
+        issue_number = arguments.get("issue_number")
+        reason = arguments.get("reason", "completed")
+        
+        if not issue_number:
+            return MCPResponse(
+                error={"code": -32602, "message": "Missing required parameter: issue_number"},
+                id=request_id
+            ).model_dump()
+        
+        # Use existing close issue logic
+        github_response = await close_github_issue(issue_number, reason)
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Successfully closed GitHub issue #{issue_number} with reason: {reason}"
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
 # Anthropic schema endpoints will be added here in future development.
 
-@app.get("/")
+@app.get("/status")
 def root():
     return {"message": "MCP server is running."}
 
@@ -446,13 +678,7 @@ async def get_feature_details(yml_filename: str):
 @app.post("/features")
 async def create_feature(feature: FeatureRequest):
     """Legacy endpoint for creating features (placeholder for GitHub Issue integration)."""
-    return {"message": "Feature created (placeholder)", "feature": feature.dict()}
-
-@app.post("/")
-async def root_post(request: Request):
-    """Handle POST requests at root."""
-    data = await request.json()
-    return JSONResponse(content={"received": data})
+    return {"message": "Feature created (placeholder)", "feature": feature.model_dump()}
 
 # Health check endpoint
 @app.get("/health")
@@ -534,6 +760,65 @@ async def list_endpoints():
             }
         ]
     }
+
+
+# Stdio-based MCP Server for VS Code integration
+async def stdio_mcp_server():
+    """Run MCP server using stdio for VS Code integration."""
+    while True:
+        try:
+            # Read JSON-RPC message from stdin
+            line = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+            if not line:
+                break
+                
+            try:
+                request_data = json.loads(line.strip())
+                mcp_request = MCPRequest(**request_data)
+                
+                # Handle different MCP methods
+                if mcp_request.method == "initialize":
+                    response = handle_initialize(mcp_request)
+                elif mcp_request.method == "notifications/initialized":
+                    response = handle_initialized(mcp_request)
+                elif mcp_request.method == "tools/list":
+                    response = handle_tools_list(mcp_request)
+                elif mcp_request.method == "tools/call":
+                    response = await handle_tools_call(mcp_request)
+                else:
+                    response = MCPResponse(
+                        error={"code": -32601, "message": f"Method not found: {mcp_request.method}"},
+                        id=mcp_request.id
+                    ).model_dump()
+                
+                # Send response to stdout
+                if response:  # Don't send empty responses for notifications
+                    print(json.dumps(response), flush=True)
+                    
+            except json.JSONDecodeError as e:
+                error_response = MCPResponse(
+                    error={"code": -32700, "message": f"Parse error: {str(e)}"},
+                    id=None
+                ).model_dump()
+                print(json.dumps(error_response), flush=True)
+                
+        except Exception as e:
+            error_response = MCPResponse(
+                error={"code": -32603, "message": f"Internal error: {str(e)}"},
+                id=None
+            ).model_dump()
+            print(json.dumps(error_response), flush=True)
+
+
+if __name__ == "__main__":
+    # Check if running as stdio MCP server
+    if len(sys.argv) == 1:
+        # Run stdio-based MCP server for VS Code
+        asyncio.run(stdio_mcp_server())
+    else:
+        # Run FastAPI server for direct HTTP access
+        import uvicorn
+        uvicorn.run(app, host="127.0.0.1", port=8000)
 
 
 

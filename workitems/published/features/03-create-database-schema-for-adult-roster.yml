@@ -1,0 +1,85 @@
+name: Feature Request
+description: Create Database Schema for Adult Roster Data
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request: Database Schema for Adult Roster Data
+        Implement SQLite database schema to store adult roster data imported from CSV files.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are you trying to solve?
+      value: |
+        The application needs a structured database schema to store adult roster data imported from CSV files. Currently, there is no database structure to persist adult member information including:
+        - Basic member information (names, contact info, BSA numbers)
+        - Training certifications and expiration dates
+        - Merit badge counselor certifications
+        - Position history and tenure information
+        - Demographic and status information
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like to see this solved?
+      value: |
+        Create a normalized SQLite database schema with the following tables:
+
+        **Primary Table:**
+        - `adults` - Core adult member information including names, contact details, BSA numbers, and basic status fields
+
+        **Related Tables:**
+        - `adult_training` - Training certifications with expiration dates (one-to-many relationship)
+        - `adult_merit_badges` - Merit badge counselor certifications (one-to-many relationship)
+        - `adult_positions` - Position history with tenure information (one-to-many relationship)
+
+        **Implementation Requirements:**
+        1. Create database schema creation script with appropriate data types
+        2. Add foreign key constraints for referential integrity
+        3. Create performance indexes for common lookup patterns
+        4. Handle complex data parsing for pipe-separated fields (training, merit badges, positions)
+        5. Support for data import from existing CSV roster files
+        6. Include database migration capabilities for schema updates
+
+        **Key Features:**
+        - Normalized structure to eliminate data redundancy
+        - Support for complex tenure tracking and position history
+        - Efficient querying for merit badge counselor assignments
+        - Training completion and expiration tracking
+        - Flexible schema to accommodate future enhancements
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references here.
+      value: |
+        **Reference Documentation:**
+        - Database schema specification: `docs/create-db-schema-for-adult-roster.md`
+        - CSV data structure analysis included in specification
+        - Performance optimization considerations documented
+        - Data import parsing requirements detailed
+
+        **Technical Considerations:**
+        - Must use SQLite as specified in architecture
+        - Schema must support fuzzy name matching for MBC assignments
+        - Database changes require change scripts as per coding standards
+        - All new functionality must include corresponding tests
+        - Schema should be extensible for future web application interface
+
+        **Dependencies:**
+        - Requires completion of CSV data import module (#01)
+        - Foundation for future MBC assignment features
+        - Prerequisite for reporting and export functionality
+
+        **Success Criteria:**
+        - Database schema successfully created and tested
+        - Adult roster data can be imported and queried
+        - Performance indexes demonstrate improved query speed
+        - Schema supports all documented CSV data fields
+        - Change scripts properly manage database migrations
