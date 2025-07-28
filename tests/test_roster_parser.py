@@ -5,6 +5,7 @@ Tests for the RosterParser class.
 import pytest
 import tempfile
 import csv
+import shutil
 from pathlib import Path
 from src.roster_parser import RosterParser
 
@@ -176,11 +177,12 @@ class TestRosterParser:
         
         # Valid row with enough meaningful data
         assert parser._is_valid_data_row(['John', 'Doe', '12345']) == True
+        assert parser._is_valid_data_row(['John', 'Doe']) == True
         
         # Invalid rows
         assert parser._is_valid_data_row([]) == False
         assert parser._is_valid_data_row(['', '', '']) == False
-        assert parser._is_valid_data_row(['John', '']) == False
+        assert parser._is_valid_data_row(['John']) == False  # Only one meaningful cell
     
     def test_header_row_detection(self):
         """Test detection of header rows."""

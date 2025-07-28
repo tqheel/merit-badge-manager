@@ -105,18 +105,13 @@ class RosterParser:
         adult_data = []
         youth_data = []
         current_section = None
-        header_row = None
         
         for i, row in enumerate(raw_data):
             # Skip empty rows
-            if not row or all(cell.strip() == '' for cell in row):
+            if not row or all(cell.strip() == '' or cell.strip() == '""' for cell in row):
                 continue
-                
-            # Remove index column (first column) if it exists
-            if row and row[0].strip().isdigit() or row[0].strip() == '" "':
-                row = row[1:]  # Remove index column
             
-            # Check for section headers
+            # Check for section headers first (before removing index column)
             if len(row) >= 2 and self.adult_section_marker in str(row[1]):
                 current_section = "adults"
                 continue
@@ -124,19 +119,27 @@ class RosterParser:
                 current_section = "youth"
                 continue
             
-            # Capture header rows (rows with column names)
-            if current_section and self._is_header_row(row):
-                header_row = self._clean_row(row)
-                if current_section == "adults":
-                    adult_data.append(header_row)
-                elif current_section == "youth":
-                    youth_data.append(header_row)
+            # Remove index column (first column) if it exists and looks like an index or empty marker
+            processed_row = row
+            if row and (row[0].strip().isdigit() or row[0].strip() == '" "' or row[0].strip() == '"' or row[0].strip() == ''):
+                processed_row = row[1:]  # Remove index column
+            
+            # Skip rows that don't have enough content after processing
+            if not processed_row:
                 continue
             
-            # Process data rows
-            if current_section and not self._is_header_row(row):
-                cleaned_row = self._clean_row(row)
-                if self._is_valid_data_row(cleaned_row):
+            # Process rows within a section
+            if current_section:
+                cleaned_row = self._clean_row(processed_row)
+                
+                # Check if it's a header row
+                if self._is_header_row(cleaned_row):
+                    if current_section == "adults":
+                        adult_data.append(cleaned_row)
+                    elif current_section == "youth":
+                        youth_data.append(cleaned_row)
+                # Check if it's a valid data row
+                elif self._is_valid_data_row(cleaned_row):
                     if current_section == "adults":
                         adult_data.append(cleaned_row)
                     elif current_section == "youth":
@@ -176,12 +179,12 @@ class RosterParser:
         Returns:
             True if row contains valid member data
         """
-        if not row or len(row) < 3:
+        if not row or len(row) < 2:
             return False
             
         # Check if row has meaningful data (not just empty strings or quotes)
-        meaningful_cells = [cell for cell in row if cell.strip() and cell.strip() != '""']
-        return len(meaningful_cells) >= 3
+        meaningful_cells = [cell for cell in row if cell.strip() and cell.strip() != '""' and cell.strip() != '" "']
+        return len(meaningful_cells) >= 2
     
     def _clean_row(self, row: List[str]) -> List[str]:
         """
