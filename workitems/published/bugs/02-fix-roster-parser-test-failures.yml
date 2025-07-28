@@ -1,0 +1,39 @@
+name: Bug Report
+description: RosterParser unit tests failing - CSV parsing logic not working correctly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Please provide details to help us reproduce and fix the issue.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened?
+      placeholder: Five unit tests in the RosterParser class are failing. The CSV parsing logic is not correctly processing test data, resulting in empty output files and index errors. Tests show that section header detection, index column removal, empty row filtering, and data validation are not working as expected.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the bug?
+      placeholder: 1. Run pytest tests/test_roster_parser.py -v 2. Observe that 5 tests fail - test_parse_basic_roster_structure, test_empty_rows_handling, test_index_column_removal, test_parsing_summary, test_quoted_field_handling 3. Check that output files are empty or contain incorrect data structure
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: All RosterParser tests should pass. The _parse_sections method should correctly identify adult and youth sections, process header rows, remove index columns, filter empty rows, and generate properly formatted CSV output files with expected data. Parsing summary should return accurate record counts.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references here.
+      placeholder: Error details - IndexError list index out of range in multiple tests, assertion failures showing 0 records instead of expected counts, empty output files when data should be present. The issue affects the reliability of the Merit Badge Counselor data import system.

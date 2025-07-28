@@ -5,3 +5,4 @@ PyYAML
 aiohttp
 aiofiles
 python-dotenv
+pytest
