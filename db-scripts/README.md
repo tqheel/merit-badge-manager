@@ -14,6 +14,9 @@ Complete SQL script that creates the adult roster database schema including:
 ### `setup_database.py`
 Python script that executes the SQL schema and provides database setup utilities.
 
+### Test Database Integration
+The setup script integrates with the test database generator in `scripts/create_test_database.py` to create databases populated with realistic fake data for development and testing.
+
 ## Usage
 
 ### Quick Setup (Recommended)
@@ -26,6 +29,33 @@ python db-scripts/setup_database.py
 
 # Create database with custom name and verify
 python db-scripts/setup_database.py -d my_database.db --verify
+```
+
+### Test Database with Fake Data
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Create test database with realistic fake data
+python scripts/create_test_database.py
+
+# Create test database with custom name
+python scripts/create_test_database.py --database my_test_database.db
+```
+
+The test database creator (`scripts/create_test_database.py`) uses the setup script to create the schema and then populates it with:
+- 5 adult members with complete profiles
+- 14 training records across various certifications  
+- 21 merit badge counselor assignments
+- 6 position records with tenure information
+
+### Testing the Database Schema
+```bash
+# Run comprehensive database tests
+python -m pytest tests/test_database_schema.py -v
+
+# Test specific functionality
+python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_schema_validation -v
 ```
 
 ### Manual SQL Execution
@@ -92,10 +122,12 @@ The schema is designed to handle complex CSV data parsing:
 
 ## Next Steps After Schema Creation
 
-1. **Import CSV Data**: Use the roster parser to populate tables
-2. **Data Validation**: Run validation views to check data quality
-3. **Performance Testing**: Verify query performance with real data
-4. **Backup Strategy**: Implement regular database backups
+1. **Create Test Data**: Use `python scripts/create_test_database.py` to create a database with realistic fake data
+2. **Run Tests**: Execute `python -m pytest tests/test_database_schema.py -v` to validate schema functionality
+3. **Import CSV Data**: Use the roster parser to populate tables with real data
+4. **Data Validation**: Run validation views to check data quality
+5. **Performance Testing**: Verify query performance with real data
+6. **Backup Strategy**: Implement regular database backups
 
 ## Schema Version
 

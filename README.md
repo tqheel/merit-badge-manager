@@ -90,6 +90,7 @@ The server will be available at:
 - **CSV Data Import**: Process Merit Badge In-Progress Reports and Troop Roster Files
 - **Fuzzy Name Matching**: Intelligent matching of MBC names across data sources
 - **Database Management**: SQLite database with proper schema and relationships
+- **Adult Roster Management**: Complete adult member database with training, merit badges, and positions
 - **Reporting & Export**: Generate actionable reports and Excel exports
 - **MBC Assignment Engine**: Intelligent assignment recommendations
 
@@ -98,6 +99,11 @@ The server will be available at:
 - **Workflow Management**: Automatic file management when features are published  
 - **API Integration**: Full GitHub API integration for issue creation
 - **YAML Format Validation**: Proper multi-line content formatting for complete issue publishing
+
+### Database & Testing
+- **Schema Management**: Automated database schema creation and validation
+- **Test Data Generation**: Realistic fake data for development and testing
+- **Comprehensive Test Suite**: Full test coverage for database functionality
 
 ### Future Enhancements
 - Web application interface
@@ -109,13 +115,20 @@ The server will be available at:
 ```
 merit-badge-manager/
 ├── data/                          # Data files (CSV imports)
+├── db-scripts/                    # Database setup and schema scripts
+│   ├── create_adult_roster_schema.sql  # Complete database schema
+│   └── setup_database.py         # Automated database creation
 ├── docs/                          # Documentation
 ├── logs/                          # Application logs
 ├── mcp_server/                    # MCP server implementation
 │   └── main.py                    # FastAPI server with GitHub integration
 ├── scripts/                       # Utility scripts
+│   ├── create_test_database.py   # Test database with fake data generator
 │   └── publish_features.py       # Feature publishing script
 ├── tests/                         # Test files
+│   ├── test_database_schema.py   # Database schema and functionality tests
+│   ├── test_mcp_server.py        # MCP server tests
+│   └── test_roster_parser.py     # Roster parsing tests
 ├── workitems/                     # Work item management
 │   ├── features/                  # Unpublished feature requests
 │   └── published/                 # Published feature requests
@@ -257,3 +270,101 @@ python scripts/publish_features.py
 ---
 
 **Remember**: Always activate the virtual environment before running any Python commands! 🐍
+
+## Database Management
+
+### Creating the Production Database
+
+The application uses SQLite for data storage with a comprehensive schema for adult roster management.
+
+```bash
+# Make sure virtual environment is activated first!
+source venv/bin/activate
+
+# Create production database with default name (merit_badge_manager.db)
+python db-scripts/setup_database.py
+
+# Create database with custom name and verify schema
+python db-scripts/setup_database.py -d my_database.db --verify
+
+# Force recreation of existing database
+python db-scripts/setup_database.py --force
+```
+
+### Creating a Test Database with Fake Data
+
+For development and testing purposes, you can create a test database populated with realistic fake data:
+
+```bash
+# Make sure virtual environment is activated first!
+source venv/bin/activate
+
+# Create test database with fake adult roster data
+python scripts/create_test_database.py
+
+# Create test database with custom name
+python scripts/create_test_database.py --database my_test_database.db
+```
+
+The test database includes:
+- **5 adult members** with complete profiles
+- **14 training records** (YPT, Position Specific, IOLS, etc.)
+- **21 merit badge counselor assignments** across various merit badges
+- **6 position records** with tenure information
+
+### Testing the Database
+
+Run the comprehensive test suite to verify database functionality:
+
+```bash
+# Make sure virtual environment is activated first!
+source venv/bin/activate
+
+# Run all database tests
+python -m pytest tests/test_database_schema.py -v
+
+# Run specific test categories
+python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_database_creation -v
+python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_schema_validation -v
+python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_fake_data_generation -v
+```
+
+### Database Schema Overview
+
+The database includes four main tables:
+
+**Core Tables:**
+- `adults` - Primary member information (names, contact, BSA numbers, demographics)
+- `adult_training` - Training certifications with expiration tracking
+- `adult_merit_badges` - Merit badge counselor certifications
+- `adult_positions` - Position history with tenure information
+
+**Performance Features:**
+- 12 optimized indexes for common query patterns
+- 4 validation views for data quality checks and reporting
+- Foreign key constraints with cascade delete
+- Automatic timestamp triggers
+
+### Validating Database Content
+
+After creating a database, you can validate its content:
+
+```bash
+# Connect to database and run validation queries
+sqlite3 merit_badge_test_database.db
+
+# Sample validation commands:
+sqlite> SELECT COUNT(*) as adult_count FROM adults;
+sqlite> SELECT * FROM current_positions;
+sqlite> SELECT merit_badge_name, counselor_count FROM merit_badge_counselors LIMIT 5;
+sqlite> .quit
+```
+
+### Database Files
+
+- **Production Database**: `merit_badge_manager.db` (main application database)
+- **Test Database**: `test_merit_badge_manager.db` (created by test script)
+- **Schema File**: `db-scripts/create_adult_roster_schema.sql` (complete SQL schema)
+- **Setup Script**: `db-scripts/setup_database.py` (automated database creation)
+
+See `db-scripts/README.md` for detailed database documentation.
