@@ -137,6 +137,72 @@ def handle_tools_list(request: MCPRequest) -> Dict[str, Any]:
                 },
                 "required": ["issue_number"]
             }
+        },
+        {
+            "name": "list_published_features",
+            "description": "List all published feature YAML files",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        {
+            "name": "get_feature_details",
+            "description": "Get details of a specific feature YAML file",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "yml_filename": {
+                        "type": "string",
+                        "description": "The YAML filename to get details for"
+                    }
+                },
+                "required": ["yml_filename"]
+            }
+        },
+        {
+            "name": "publish_bug",
+            "description": "Publish a bug YAML file as a GitHub issue",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "yml_filename": {
+                        "type": "string",
+                        "description": "The bug YAML filename to publish"
+                    }
+                },
+                "required": ["yml_filename"]
+            }
+        },
+        {
+            "name": "list_bugs",
+            "description": "List all unpublished bug YAML files",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        {
+            "name": "list_published_bugs",
+            "description": "List all published bug YAML files",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        {
+            "name": "get_bug_details",
+            "description": "Get details of a specific bug YAML file",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "yml_filename": {
+                        "type": "string",
+                        "description": "The bug YAML filename to get details for"
+                    }
+                },
+                "required": ["yml_filename"]
+            }
         }
     ]
     
@@ -157,6 +223,18 @@ async def handle_tools_call(request: MCPRequest) -> Dict[str, Any]:
             return await mcp_list_features(arguments, request.id)
         elif tool_name == "close_issue":
             return await mcp_close_issue(arguments, request.id)
+        elif tool_name == "list_published_features":
+            return await mcp_list_published_features(arguments, request.id)
+        elif tool_name == "get_feature_details":
+            return await mcp_get_feature_details(arguments, request.id)
+        elif tool_name == "publish_bug":
+            return await mcp_publish_bug(arguments, request.id)
+        elif tool_name == "list_bugs":
+            return await mcp_list_bugs(arguments, request.id)
+        elif tool_name == "list_published_bugs":
+            return await mcp_list_published_bugs(arguments, request.id)
+        elif tool_name == "get_bug_details":
+            return await mcp_get_bug_details(arguments, request.id)
         else:
             return MCPResponse(
                 error={"code": -32601, "message": f"Tool not found: {tool_name}"},
@@ -260,6 +338,182 @@ async def mcp_close_issue(arguments: Dict[str, Any], request_id: str) -> Dict[st
             id=request_id
         ).model_dump()
 
+async def mcp_list_published_features(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for list published features functionality."""
+    try:
+        if not PUBLISHED_FEATURES_DIR.exists():
+            features = []
+        else:
+            features = [f.name for f in PUBLISHED_FEATURES_DIR.glob("*.yml")]
+        
+        feature_list = "\n".join(f"- {feature}" for feature in features) if features else "No published features found."
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Published Features:\n{feature_list}"
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
+async def mcp_get_feature_details(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for get feature details functionality."""
+    try:
+        yml_filename = arguments.get("yml_filename")
+        if not yml_filename:
+            return MCPResponse(
+                error={"code": -32602, "message": "Missing required parameter: yml_filename"},
+                id=request_id
+            ).model_dump()
+        
+        # Load feature data
+        feature_data = await load_feature_yml(yml_filename)
+        issue_preview = convert_yml_to_github_issue(feature_data)
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Feature: {yml_filename}\nTitle: {issue_preview.title}\nLabels: {issue_preview.labels}\n\nPreview:\n{issue_preview.body[:500]}..."
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
+async def mcp_publish_bug(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for publish bug functionality."""
+    try:
+        yml_filename = arguments.get("yml_filename")
+        if not yml_filename:
+            return MCPResponse(
+                error={"code": -32602, "message": "Missing required parameter: yml_filename"},
+                id=request_id
+            ).model_dump()
+        
+        # Use existing publish logic but for bugs
+        bug_data = await load_workitem_yml(yml_filename, "bug")
+        issue_data = convert_yml_to_github_issue(bug_data)
+        github_response = await create_github_issue(issue_data)
+        await move_workitem_to_published(yml_filename, "bug")
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Successfully published bug '{yml_filename}' to GitHub issue #{github_response.get('number')}"
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
+async def mcp_list_bugs(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for list bugs functionality."""
+    try:
+        if not BUGS_DIR.exists():
+            bugs = []
+        else:
+            bugs = [f.name for f in BUGS_DIR.glob("*.yml")]
+        
+        bug_list = "\n".join(f"- {bug}" for bug in bugs) if bugs else "No unpublished bugs found."
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Unpublished Bugs:\n{bug_list}"
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
+async def mcp_list_published_bugs(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for list published bugs functionality."""
+    try:
+        if not PUBLISHED_BUGS_DIR.exists():
+            bugs = []
+        else:
+            bugs = [f.name for f in PUBLISHED_BUGS_DIR.glob("*.yml")]
+        
+        bug_list = "\n".join(f"- {bug}" for bug in bugs) if bugs else "No published bugs found."
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Published Bugs:\n{bug_list}"
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
+async def mcp_get_bug_details(arguments: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+    """MCP wrapper for get bug details functionality."""
+    try:
+        yml_filename = arguments.get("yml_filename")
+        if not yml_filename:
+            return MCPResponse(
+                error={"code": -32602, "message": "Missing required parameter: yml_filename"},
+                id=request_id
+            ).model_dump()
+        
+        # Load bug data
+        bug_data = await load_workitem_yml(yml_filename, "bug")
+        issue_preview = convert_yml_to_github_issue(bug_data)
+        
+        return MCPResponse(
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Bug: {yml_filename}\nTitle: {issue_preview.title}\nLabels: {issue_preview.labels}\n\nPreview:\n{issue_preview.body[:500]}..."
+                    }
+                ]
+            },
+            id=request_id
+        ).model_dump()
+    except Exception as e:
+        return MCPResponse(
+            error={"code": -32603, "message": str(e)},
+            id=request_id
+        ).model_dump()
+
 # Anthropic schema endpoints will be added here in future development.
 
 @app.get("/status")
@@ -325,27 +579,30 @@ def convert_yml_to_github_issue(workitem_data: Dict[str, Any]) -> GitHubIssueDat
     solution_content = ""
     additional_context = ""
     
+    # Extract content from YAML structure
     for section in body_sections:
         if section.get("type") == "textarea":
             field_id = section.get("id", "")
-            placeholder = section.get("attributes", {}).get("placeholder", "")
+            # For our YAML structure, the actual content is in the placeholder field
+            # This is where the real feature/bug content is stored
+            content = section.get("attributes", {}).get("placeholder", "")
             
             # Bug report fields
             if field_id == "description":
-                description_content = placeholder
+                description_content = content
             elif field_id == "steps":
-                steps_content = placeholder
+                steps_content = content
             elif field_id == "expected":
-                expected_content = placeholder
+                expected_content = content
             # Feature request fields
             elif field_id == "problem":
-                problem_content = placeholder
+                problem_content = content
             elif field_id == "solution":
-                solution_content = placeholder
+                solution_content = content
             elif field_id == "context":
-                additional_context = placeholder
+                additional_context = content
     
-    # Generate title from description
+    # Generate title from description field in workitem_data
     title = workitem_data.get("description", "Workitem")
     
     # Determine if this is a bug or feature and format accordingly

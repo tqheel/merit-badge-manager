@@ -95,8 +95,9 @@ The server will be available at:
 
 ### GitHub Integration
 - **Feature Publishing**: Convert YAML feature requests to GitHub Issues
-- **Workflow Management**: Automatic file management when features are published
+- **Workflow Management**: Automatic file management when features are published  
 - **API Integration**: Full GitHub API integration for issue creation
+- **YAML Format Validation**: Proper multi-line content formatting for complete issue publishing
 
 ### Future Enhancements
 - Web application interface
@@ -162,6 +163,33 @@ pip install package-name
 # Update requirements.txt
 pip freeze > requirements.txt
 ```
+
+### YAML Feature/Bug Template Guidelines
+
+When creating feature or bug YAML files, follow these formatting requirements:
+
+#### ✅ **Correct Multi-line Formatting**
+```yaml
+- type: textarea
+  id: problem
+  attributes:
+    label: Problem Statement
+    placeholder: |
+      Multi-line content should use YAML block literal syntax
+      with the pipe (|) character to preserve formatting
+      and prevent content truncation during parsing.
+```
+
+#### ❌ **Incorrect Single-line Formatting**  
+```yaml
+- type: textarea
+  id: problem
+  attributes:
+    label: Problem Statement
+    placeholder: Very long single-line content that may be truncated during YAML parsing and cause empty sections in GitHub issues.
+```
+
+**Important**: Always use the `|` block literal syntax for multi-line placeholder content to ensure complete GitHub issue publishing.
 
 ## API Usage
 

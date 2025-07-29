@@ -24,6 +24,7 @@ Include issue number in all commit messages.
 - Generate change scripts for database schema changes and ensure they are applied to the SQLite database.
 - Update compatible dependencies that are not breaking changes.
 - Label all Github issues that are sub-issues of Feature requests as `user story`.
+- Use YAML block literal syntax (|) for multi-line content in feature/bug templates to prevent content truncation.
 
 ## Never:
 - Never include any passwords, API keys, or sensitive information in the codebase except in secure configuration files that are not committed to the repository.

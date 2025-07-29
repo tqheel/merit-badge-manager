@@ -164,3 +164,46 @@ The API provides detailed error messages for common issues:
 - File system errors
 
 All errors include appropriate HTTP status codes and descriptive error messages.
+
+## YAML Formatting Requirements
+
+### Critical: Multi-line Content Formatting
+
+When creating YAML feature or bug templates, **always use YAML block literal syntax** for multi-line placeholder content:
+
+#### ✅ **Correct Format**
+```yaml
+- type: textarea
+  id: problem
+  attributes:
+    label: Problem Statement
+    placeholder: |
+      Use the pipe (|) character for multi-line content.
+      This ensures complete content extraction and prevents
+      truncation during YAML parsing.
+```
+
+#### ❌ **Incorrect Format**
+```yaml
+- type: textarea
+  id: problem
+  attributes:
+    label: Problem Statement
+    placeholder: Long single-line content may be truncated causing empty GitHub issue sections.
+```
+
+### Validation Steps
+
+Before publishing YAML files:
+
+1. **Test locally**: Verify YAML parsing extracts complete content
+2. **Check sections**: Ensure all textarea fields have substantial content
+3. **Preview**: Use MCP tools to preview GitHub issue content before publishing
+
+### Troubleshooting Empty GitHub Issues
+
+If GitHub issues show empty sections:
+- Check YAML file formatting
+- Verify multi-line content uses `|` syntax  
+- Test content extraction locally
+- Republish with corrected formatting

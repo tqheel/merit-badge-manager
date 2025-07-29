@@ -13,6 +13,7 @@ This document specifies the requirements and architecture for the Scouting Ameri
 - Documentation must be updated to reflect any changes in functionality.
 - All new dependencies must be added to `requirements.txt` and installed in the active Python virtual environment.
 - Database schema changes must be managed with change scripts and applied to the SQLite database.
+- YAML files for GitHub issues must use block literal syntax (`|`) for multi-line content to prevent truncation.
 
 ## 2. Purpose
 - Provide an efficient, local system for managing MBC assignments and workloads.
