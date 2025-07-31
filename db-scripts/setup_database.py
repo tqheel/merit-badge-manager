@@ -2,34 +2,45 @@
 """
 Merit Badge Manager - Database Schema Setup Script
 Created: 2025-07-28
-Purpose: Create and initialize the adult roster database schema
+Updated: 2025-07-31
+Purpose: Create and initialize the adult and youth roster database schemas
 
-This script creates the SQLite database schema for storing adult roster data
-as specified in docs/create-db-schema-for-adult-roster.md
+This script creates the SQLite database schema for storing adult and youth roster data
+as specified in docs/create-db-schema-for-adult-roster.md and GitHub Issue #12
 """
 
 import sqlite3
 import sys
 from pathlib import Path
 
-def create_database_schema(db_path: str = "merit_badge_manager.db"):
+def create_database_schema(db_path: str = "merit_badge_manager.db", include_youth: bool = True):
     """
-    Create the adult roster database schema.
+    Create the adult and youth roster database schemas.
     
     Args:
         db_path: Path to the SQLite database file
+        include_youth: Whether to include youth schema tables
     """
     
-    # Get the SQL script path
+    # Get the SQL script paths
     script_dir = Path(__file__).parent
-    sql_file = script_dir / "create_adult_roster_schema.sql"
+    adult_sql_file = script_dir / "create_adult_roster_schema.sql"
+    youth_sql_file = script_dir / "youth_database_schema.sql"
     
-    if not sql_file.exists():
-        raise FileNotFoundError(f"SQL script not found: {sql_file}")
+    if not adult_sql_file.exists():
+        raise FileNotFoundError(f"Adult SQL script not found: {adult_sql_file}")
     
-    # Read the SQL script
-    with open(sql_file, 'r') as f:
-        sql_script = f.read()
+    if include_youth and not youth_sql_file.exists():
+        raise FileNotFoundError(f"Youth SQL script not found: {youth_sql_file}")
+    
+    # Read the SQL scripts
+    with open(adult_sql_file, 'r') as f:
+        adult_sql_script = f.read()
+    
+    youth_sql_script = ""
+    if include_youth:
+        with open(youth_sql_file, 'r') as f:
+            youth_sql_script = f.read()
     
     try:
         # Connect to database (creates file if it doesn't exist)
@@ -40,9 +51,14 @@ def create_database_schema(db_path: str = "merit_badge_manager.db"):
         # Enable foreign key support
         cursor.execute("PRAGMA foreign_keys = ON")
         
-        # Execute the schema creation script
-        print("Executing schema creation script...")
-        cursor.executescript(sql_script)
+        # Execute the adult schema creation script
+        print("Executing adult roster schema creation script...")
+        cursor.executescript(adult_sql_script)
+        
+        # Execute the youth schema creation script if requested
+        if include_youth:
+            print("Executing youth roster schema creation script...")
+            cursor.executescript(youth_sql_script)
         
         # Commit changes
         conn.commit()
@@ -97,12 +113,13 @@ def create_database_schema(db_path: str = "merit_badge_manager.db"):
         if conn:
             conn.close()
 
-def verify_schema(db_path: str):
+def verify_schema(db_path: str, include_youth: bool = True):
     """
     Verify the database schema is correctly created.
     
     Args:
         db_path: Path to the SQLite database file
+        include_youth: Whether youth schema should be verified
     """
     try:
         conn = sqlite3.connect(db_path)
@@ -115,37 +132,77 @@ def verify_schema(db_path: str):
         fk_status = cursor.fetchone()[0]
         print(f"Foreign key constraints: {'✅ Enabled' if fk_status else '❌ Disabled'}")
         
-        # Test basic queries on each table
-        test_queries = [
+        # Test basic queries on each adult table
+        adult_test_queries = [
             ("adults", "SELECT COUNT(*) FROM adults"),
             ("adult_training", "SELECT COUNT(*) FROM adult_training"),
             ("adult_merit_badges", "SELECT COUNT(*) FROM adult_merit_badges"),
             ("adult_positions", "SELECT COUNT(*) FROM adult_positions")
         ]
         
-        for table_name, query in test_queries:
+        for table_name, query in adult_test_queries:
             try:
                 cursor.execute(query)
                 count = cursor.fetchone()[0]
-                print(f"Table {table_name}: ✅ Accessible (0 records)")
+                print(f"Table {table_name}: ✅ Accessible ({count} records)")
             except sqlite3.Error as e:
                 print(f"Table {table_name}: ❌ Error - {e}")
         
-        # Test views
-        view_queries = [
+        # Test basic queries on each youth table if included
+        if include_youth:
+            youth_test_queries = [
+                ("scouts", "SELECT COUNT(*) FROM scouts"),
+                ("scout_training", "SELECT COUNT(*) FROM scout_training"),
+                ("scout_positions", "SELECT COUNT(*) FROM scout_positions"),
+                ("parent_guardians", "SELECT COUNT(*) FROM parent_guardians"),
+                ("scout_merit_badge_progress", "SELECT COUNT(*) FROM scout_merit_badge_progress"),
+                ("scout_advancement_history", "SELECT COUNT(*) FROM scout_advancement_history")
+            ]
+            
+            for table_name, query in youth_test_queries:
+                try:
+                    cursor.execute(query)
+                    count = cursor.fetchone()[0]
+                    print(f"Table {table_name}: ✅ Accessible ({count} records)")
+                except sqlite3.Error as e:
+                    print(f"Table {table_name}: ❌ Error - {e}")
+        
+        # Test adult views
+        adult_view_queries = [
             ("adults_missing_data", "SELECT COUNT(*) FROM adults_missing_data"),
             ("training_expiration_summary", "SELECT COUNT(*) FROM training_expiration_summary"),
             ("merit_badge_counselors", "SELECT COUNT(*) FROM merit_badge_counselors"),
             ("current_positions", "SELECT COUNT(*) FROM current_positions")
         ]
         
-        for view_name, query in view_queries:
+        for view_name, query in adult_view_queries:
             try:
                 cursor.execute(query)
                 count = cursor.fetchone()[0]
                 print(f"View {view_name}: ✅ Accessible")
             except sqlite3.Error as e:
                 print(f"View {view_name}: ❌ Error - {e}")
+        
+        # Test youth views if included
+        if include_youth:
+            youth_view_queries = [
+                ("scouts_missing_data", "SELECT COUNT(*) FROM scouts_missing_data"),
+                ("active_scouts_with_positions", "SELECT COUNT(*) FROM active_scouts_with_positions"),
+                ("merit_badge_progress_summary", "SELECT COUNT(*) FROM merit_badge_progress_summary"),
+                ("scouts_needing_counselors", "SELECT COUNT(*) FROM scouts_needing_counselors"),
+                ("advancement_progress_by_rank", "SELECT COUNT(*) FROM advancement_progress_by_rank"),
+                ("primary_parent_contacts", "SELECT COUNT(*) FROM primary_parent_contacts"),
+                ("scout_training_expiration_summary", "SELECT COUNT(*) FROM scout_training_expiration_summary"),
+                ("patrol_assignments", "SELECT COUNT(*) FROM patrol_assignments")
+            ]
+            
+            for view_name, query in youth_view_queries:
+                try:
+                    cursor.execute(query)
+                    count = cursor.fetchone()[0]
+                    print(f"View {view_name}: ✅ Accessible")
+                except sqlite3.Error as e:
+                    print(f"View {view_name}: ❌ Error - {e}")
         
         print("✅ Schema verification completed!")
         return True
@@ -165,7 +222,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(
-        description="Create Merit Badge Manager adult roster database schema"
+        description="Create Merit Badge Manager adult and youth roster database schemas"
     )
     parser.add_argument(
         "--database", "-d",
@@ -182,10 +239,16 @@ def main():
         action="store_true",
         help="Force recreation even if database exists"
     )
+    parser.add_argument(
+        "--adults-only", "-a",
+        action="store_true",
+        help="Create only adult roster schema (exclude youth schema)"
+    )
     
     args = parser.parse_args()
     
     db_path = Path(args.database)
+    include_youth = not args.adults_only
     
     # Check if database already exists
     if db_path.exists() and not args.force:
@@ -194,7 +257,7 @@ def main():
         sys.exit(1)
     
     # Create the schema
-    success = create_database_schema(str(db_path))
+    success = create_database_schema(str(db_path), include_youth)
     
     if not success:
         print("❌ Failed to create database schema")
@@ -202,17 +265,26 @@ def main():
     
     # Verify if requested
     if args.verify:
-        verify_success = verify_schema(str(db_path))
+        verify_success = verify_schema(str(db_path), include_youth)
         if not verify_success:
             print("❌ Schema verification failed")
             sys.exit(1)
     
     print(f"\n🎉 Database setup completed successfully!")
     print(f"📁 Database: {db_path.absolute()}")
+    if include_youth:
+        print("📋 Schemas: Adult roster + Youth roster")
+    else:
+        print("📋 Schemas: Adult roster only")
     print("\n💡 Next steps:")
     print("1. Import adult roster CSV data")
-    print("2. Verify data integrity using the validation views")
-    print("3. Begin using the database for merit badge counselor assignments")
+    if include_youth:
+        print("2. Import youth roster CSV data")
+        print("3. Verify data integrity using the validation views")
+        print("4. Begin using the database for merit badge counselor assignments and Scout tracking")
+    else:
+        print("2. Verify data integrity using the validation views")
+        print("3. Begin using the database for merit badge counselor assignments")
 
 if __name__ == "__main__":
     main()
