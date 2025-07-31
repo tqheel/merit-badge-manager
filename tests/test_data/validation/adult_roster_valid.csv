@@ -1,0 +1,5 @@
+first_name,last_name,email,city,state,zip,age_category,date_joined,bsa_number,unit_number,oa_info,health_form_status,swim_class,swim_class_date,positions_tenure
+John,Smith,john.smith@email.com,Anytown,NC,12345,Adult,2020-01-15,12345678,212,OA Member,Current,Swimmer,2023-06-01,Scoutmaster (2y 3m)
+Jane,Doe,jane.doe@email.com,Somewhere,NC,23456,Adult,2019-03-20,87654321,212,,Current,Non-Swimmer,,Committee Member (1y 6m)
+Bob,Johnson,bob.johnson@email.com,Elsewhere,NC,34567,Adult,2021-07-10,11223344,212,OA Member,Current,Beginner,2023-05-15,Assistant Scoutmaster (8m)
+Mary,Williams,mary.williams@email.com,Hometown,NC,45678,Adult,2018-09-05,55667788,212,,Current,Swimmer,2023-07-01,Committee Chair (3y 2m)
