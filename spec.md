@@ -17,13 +17,18 @@ This document specifies the requirements and architecture for the Scouting Ameri
 
 ## 2. Purpose
 - Provide an efficient, local system for managing MBC assignments and workloads.
+- Enable comprehensive Scout tracking with merit badge progress management.
+- Support Scout-to-counselor assignment workflows with parent communication.
 - Enable data-driven decision-making and reporting outside of Scoutbook.
 - Simplify the process of preparing assignments for manual entry into Scoutbook.
 
 ## 3. Goals
 - Track MBC assignments and workloads.
+- Manage comprehensive Scout roster with advancement tracking.
+- Support Scout merit badge progress with counselor assignments.
 - Enable efficient assignment of MBCs to Scouts.
-- Generate actionable reports.
+- Provide parent/guardian communication integration.
+- Generate actionable reports for both adult and youth data.
 - Streamline pre-Scoutbook assignment workflows.
 
 ## 4. Data Sources
@@ -44,6 +49,10 @@ This document specifies the requirements and architecture for the Scouting Ameri
   - Remove index column and section headers
   - Handle empty rows
   - Parse different columns for adults/youth
+  - Extract Scout training data (pipe-separated with complex formatting)
+  - Process Scout position tenure information with patrol assignments
+  - Handle parent/guardian data (up to 4 contacts per Scout)
+  - Manage rank progression and advancement tracking
 
 ## 5. Technical Architecture
 ### 5.1 Core Technologies
@@ -57,31 +66,38 @@ This document specifies the requirements and architecture for the Scouting Ameri
 - Automated test case generation for all GitHub issues
 
 ### 5.2 Key Components
-- Data import and cleaning modules
-- Fuzzy name matching algorithm
-- Database schema for scouts, adults, and merit badge assignments
-- Database testing infrastructure with fake data generation
-- Reporting and export functionality
+- Data import and cleaning modules for both adult and youth rosters
+- Fuzzy name matching algorithm for Scout-to-counselor assignments
+- Comprehensive database schema for scouts, adults, and merit badge assignments
+- Database testing infrastructure with fake data generation for integrated systems
+- Scout advancement tracking and rank progression management
+- Parent/guardian communication system with contact management
+- Reporting and export functionality for operational insights
 - MCP server for Copilot integration
 
 ### 5.3 Database Management
-- SQLite database with adult roster schema
-- Automated schema creation and validation
-- Test database generation with realistic fake data
-- Comprehensive test suite for database functionality
-- Performance optimization with indexes and views
+- SQLite database with comprehensive adult and youth roster schemas
+- Automated schema creation and validation for both systems
+- Test database generation with realistic fake data for adult-youth integration
+- Comprehensive test suite for database functionality and cross-system interactions
+- Performance optimization with 36 indexes and 12 validation views
+- Scout-to-counselor assignment system with merit badge progress tracking
+- Parent/guardian contact management with communication features
 
 ## 6. Future Enhancements
 ### 6.1 Web Application
-- Browser-based UI for data viewing/editing
-- Assignment interface
-- Task list for Scoutbook entry
-- MBC workload dashboard
+- Browser-based UI for data viewing/editing of both adult and youth rosters
+- Assignment interface for Scout-to-counselor matching
+- Task list for Scoutbook entry with integrated assignment tracking
+- MBC workload dashboard with Scout progress visualization
+- Parent communication portal for merit badge updates
+- Scout advancement tracking and rank progression interface
 
 ### 6.2 Automation
-- Playwright-based automation for downloading CSVs from Scoutbook
-- Automated report generation
+- Playwright-based automation for downloading CSVs from Scoutbook (both adult and youth rosters)
+- Automated report generation for merit badge assignments and Scout progress
 - Google account authentication for Scoutbook access
+- Automated parent notifications for merit badge milestones
 
 **Note:** No API access to Scoutbook; web scraping/automation will be required for future data sync.
 

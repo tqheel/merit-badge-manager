@@ -1,23 +1,338 @@
-# Database Schema for Youth Roster Data
+# Youth Roster Database Schema Documentation
 
 ## Overview
 
-This document specifies the SQLite database schema for storing Youth (Scout) roster data imported from CSV files. The schema is designed to normalize the complex youth roster data structure into efficient, queryable tables that support merit badge counselor management and Scout tracking.
+This document describes the youth roster database schema implementation for the Merit Badge Manager system, as specified in GitHub Issue #12. The schema provides comprehensive support for Scout tracking, merit badge progress management, and integration with the adult roster system for counselor assignments.
 
-## CSV File Analysis
+## Database Schema Components
 
-The youth roster CSV contains the following header columns:
+### Core Tables
 
-### Core Scout Information
-- First Name, Last Name, Rank, BSA Number, Date of Birth, Age, Date Joined
-- OA Info, Health Form A/B - Health Form C, Swim Class, Swim Class Date
-- Positions (Tenure), Unit, Patrol, Training, Expiration Date
+#### 1. `scouts` - Core Scout Information
+The primary table storing essential Scout member data:
 
-### Parent/Guardian Information (Up to 4 contacts)
-- Parent/Guardian Name 1-4, Address1-4, City1-4, State1-4, Zip1-4
-- Home Phone1-4, Work Phone1-4, Mobile Phone1-4, Email1-4
+- **Primary Key**: `id` (auto-increment)
+- **Unique Identifier**: `bsa_number` (for cross-system matching)
+- **Demographics**: `first_name`, `last_name`, `date_of_birth`, `age`
+- **Scouting Info**: `rank`, `patrol_name`, `unit_number`, `date_joined`
+- **Status**: `activity_status` (Active, Inactive, Aged Out)
+- **Contact**: `email`, `phone`, address fields
+- **OA Membership**: `oa_info` (Order of the Arrow status)
+- **Raw Data**: `positions_tenure`, `training_raw` (for import reference)
 
-## Data Type Analysis
+#### 2. `scout_training` - Training Records
+Tracks Scout training certifications with expiration dates:
+
+- **Foreign Key**: `scout_id` → `scouts.id`
+- **Training Info**: `training_code`, `training_name`
+- **Expiration**: `expiration_date` (supports "does not expire")
+- **Constraint**: Unique per scout and training code
+
+#### 3. `scout_positions` - Leadership Positions
+Manages Scout leadership positions and patrol assignments:
+
+- **Foreign Key**: `scout_id` → `scouts.id`
+- **Position Info**: `position_title`, `patrol_name`
+- **Tenure**: `tenure_info` (complex format: "5m 1d", "2y 5m 6d")
+- **Status**: `is_current` flag for active positions
+- **Dates**: `start_date`, `end_date` (optional)
+
+#### 4. `parent_guardians` - Parent/Guardian Contacts
+Stores up to 4 parent/guardian contacts per Scout:
+
+- **Foreign Key**: `scout_id` → `scouts.id`
+- **Identifier**: `guardian_number` (1-4)
+- **Contact Info**: `first_name`, `last_name`, `relationship`
+- **Communication**: `email`, multiple phone fields
+- **Address**: Complete address information
+- **Primary**: `is_primary` flag for main contact
+- **Constraint**: Unique per scout and guardian number
+
+#### 5. `scout_merit_badge_progress` - Merit Badge Tracking
+Tracks Scout merit badge work and counselor assignments:
+
+- **Foreign Key**: `scout_id` → `scouts.id`
+- **Merit Badge**: `merit_badge_name`
+- **Counselor**: `counselor_adult_id` (references adult roster)
+- **Status**: `status` (Not Started, In Progress, Completed, Approved)
+- **Tracking**: `date_started`, `date_completed`
+- **Requirements**: `requirements_completed` (flexible format)
+- **Notes**: Additional information
+- **Constraint**: Unique per scout and merit badge
+
+#### 6. `scout_advancement_history` - Rank Progression
+Historical record of Scout advancement:
+
+- **Foreign Key**: `scout_id` → `scouts.id`
+- **Advancement**: `rank_name`, `date_awarded`
+- **Process**: `board_of_review_date`, `scoutmaster_conference_date`
+- **Notes**: Additional information
+
+### Performance Optimization
+
+#### Comprehensive Indexing Strategy
+- **Scout Lookups**: BSA number, name, unit, rank, patrol, activity status, age
+- **Training Queries**: Scout ID, training code, expiration date
+- **Position Searches**: Scout ID, current positions, position title, patrol
+- **Parent Contacts**: Scout ID, primary contacts, name
+- **Merit Badge Progress**: Scout ID, badge name, counselor, status
+- **Advancement**: Scout ID, rank, date
+
+#### Foreign Key Constraints
+- All child tables reference `scouts.id` with CASCADE DELETE
+- Maintains data integrity and automatic cleanup
+
+### Integration Features
+
+#### Scout-to-Counselor Assignment System
+The `scout_merit_badge_progress` table provides the integration point between Scout data and adult merit badge counselors:
+
+```sql
+-- Example: Assign counselor to scout for specific merit badge
+INSERT INTO scout_merit_badge_progress (
+    scout_id, merit_badge_name, counselor_adult_id, 
+    status, date_started
+) VALUES (1, 'First Aid', 3, 'In Progress', '2024-01-01');
+```
+
+#### Cross-System BSA Number Matching
+Both adults and scouts use `bsa_number` as unique identifiers for:
+- Data import reconciliation
+- Cross-system queries and reporting
+- Fuzzy name matching support
+
+## Data Validation Views
+
+### Scout Management Views
+
+#### `scouts_missing_data`
+Identifies scouts with incomplete required information:
+- Missing rank, unit, join date, birth date, or patrol assignment
+
+#### `active_scouts_with_positions`
+Shows active scouts and their current leadership positions:
+- Filtered to active scouts only
+- Includes current position and patrol information
+
+#### `advancement_progress_by_rank`
+Summarizes advancement statistics by rank:
+- Scout count per rank
+- Active vs. total counts
+- Average age by rank
+
+#### `patrol_assignments`
+Displays patrol membership and assignments:
+- Scout count per patrol
+- Active vs. total membership
+- Scout names by patrol
+
+### Merit Badge Management Views
+
+#### `merit_badge_progress_summary`
+Aggregates merit badge work across all scouts:
+- Total scouts working on each badge
+- Progress status breakdown (completed, in progress, not started)
+
+#### `scouts_needing_counselors`
+Critical view for counselor assignment management:
+- Shows scouts without assigned counselors
+- Filtered to active scouts with merit badge work
+- Includes status and start date for prioritization
+
+### Communication and Contact Views
+
+#### `primary_parent_contacts`
+Provides primary parent/guardian contact information:
+- One contact per scout (primary flag = 1)
+- Essential for communication about merit badge assignments
+- Includes email and phone information
+
+#### `scout_training_expiration_summary`
+Tracks Scout training status:
+- Expiration status (current, expired, expiring soon)
+- Essential for determining Scout readiness for positions
+
+## Data Processing Considerations
+
+### Complex Data Import Requirements
+
+#### Scout Training Data Processing
+Training data arrives in pipe-separated format with complex structures:
+```
+"TLT - Troop Leadership Training (does not expire) | YPT_YOUTH - Youth Protection Training (expires 2025-01-15)"
+```
+
+Processing requirements:
+- Parse pipe-separated values
+- Extract training codes and names
+- Handle various expiration formats
+- Support "does not expire" values
+
+#### Position Data Processing
+Position data includes complex tenure and patrol information:
+```
+"Patrol Leader [Eagle Patrol] (5m 1d) | Senior Patrol Leader (2y 5m 6d) | Scribe [Dragon Fruit Patrol] (11m 3d)"
+```
+
+Processing requirements:
+- Parse multiple concurrent/historical positions
+- Extract patrol names from brackets
+- Parse tenure duration formats
+- Determine current vs. historical positions
+
+#### Parent/Guardian Data Processing
+Each Scout can have up to 4 parent/guardian contacts:
+- Complete contact information per guardian
+- Primary contact designation
+- Relationship categorization
+- Phone number normalization
+
+### Data Quality Validation
+
+#### BSA Number Uniqueness
+- Enforced at database level
+- Critical for cross-system matching
+- Import validation required
+
+#### Rank Hierarchy Validation
+Proper advancement sequence validation:
+Scout → Tenderfoot → Second Class → First Class → Star → Life → Eagle
+
+#### Age-Based Activity Status
+- 18+ typically aged out
+- Activity status should align with age
+- Exception handling for older active scouts
+
+## Integration Points
+
+### Merit Badge Counselor System Integration
+
+#### Counselor Assignment Workflow
+1. Scout registers interest in merit badge
+2. Query available counselors from adult roster
+3. Assign counselor via `scout_merit_badge_progress` table
+4. Track progress and requirements completion
+5. Update status upon completion
+
+#### Query Examples
+```sql
+-- Find available counselors for a specific merit badge
+SELECT a.first_name, a.last_name, a.email, a.phone
+FROM adults a
+JOIN adult_merit_badges amb ON a.id = amb.adult_id
+WHERE amb.merit_badge_name = 'First Aid'
+  AND a.health_form_status = 'Current';
+
+-- Show scout assignments for a counselor
+SELECT s.first_name, s.last_name, smbp.merit_badge_name, smbp.status
+FROM scout_merit_badge_progress smbp
+JOIN scouts s ON smbp.scout_id = s.id
+WHERE smbp.counselor_adult_id = 3;
+```
+
+### Parent Communication Integration
+The parent/guardian system enables:
+- Merit badge assignment notifications
+- Progress updates to families
+- Contact information for counselor communication
+- Emergency contact availability
+
+### Patrol Management Integration
+Patrol assignments support:
+- Leadership position tracking within patrols
+- Patrol-based merit badge projects
+- Advancement coordination by patrol
+- Activity planning and communication
+
+## Usage Examples
+
+### Common Query Patterns
+
+#### Active Scouts by Rank
+```sql
+SELECT rank, COUNT(*) as count
+FROM scouts 
+WHERE activity_status = 'Active'
+GROUP BY rank
+ORDER BY CASE rank
+  WHEN 'Scout' THEN 1
+  WHEN 'Tenderfoot' THEN 2
+  WHEN 'Second Class' THEN 3
+  WHEN 'First Class' THEN 4
+  WHEN 'Star' THEN 5
+  WHEN 'Life' THEN 6
+  WHEN 'Eagle' THEN 7
+END;
+```
+
+#### Merit Badge Counselor Assignments
+```sql
+SELECT 
+  s.first_name || ' ' || s.last_name as scout_name,
+  smbp.merit_badge_name,
+  a.first_name || ' ' || a.last_name as counselor_name,
+  smbp.status,
+  smbp.date_started
+FROM scout_merit_badge_progress smbp
+JOIN scouts s ON smbp.scout_id = s.id
+LEFT JOIN adults a ON smbp.counselor_adult_id = a.id
+WHERE s.activity_status = 'Active'
+ORDER BY s.last_name, s.first_name;
+```
+
+#### Patrol Leadership
+```sql
+SELECT 
+  sp.patrol_name,
+  sp.position_title,
+  s.first_name || ' ' || s.last_name as scout_name,
+  sp.tenure_info
+FROM scout_positions sp
+JOIN scouts s ON sp.scout_id = s.id
+WHERE sp.is_current = 1
+  AND s.activity_status = 'Active'
+ORDER BY sp.patrol_name, sp.position_title;
+```
+
+## Testing and Validation
+
+### Test Database Generation
+The system includes comprehensive test data generation:
+- Realistic Scout demographics and advancement
+- Varied patrol assignments and positions
+- Parent/guardian contact information
+- Merit badge progress with counselor assignments
+- Training records with appropriate expiration dates
+
+### Test Coverage Areas
+1. **Schema Validation**: Table structure, constraints, indexes
+2. **Data Integrity**: Foreign keys, unique constraints, cascading deletes
+3. **View Functionality**: All validation views with sample data
+4. **Integration Testing**: Adult-youth system interactions
+5. **Performance Testing**: Index usage and query optimization
+
+## Deployment and Maintenance
+
+### Schema Setup
+```bash
+# Create database with both adult and youth schemas
+python db-scripts/setup_database.py --database production.db --verify
+
+# Create test database with sample data
+python scripts/create_test_database.py --database test.db
+```
+
+### Backup and Migration
+- Regular database backups recommended
+- Schema version tracking via metadata table
+- Migration scripts for future schema updates
+
+### Monitoring and Performance
+- Regular index usage analysis
+- Query performance monitoring
+- View optimization based on usage patterns
+
+This youth roster database schema provides a comprehensive foundation for Scout tracking, merit badge management, and counselor assignment coordination while maintaining integration with the existing adult roster system.
 
 Based on sample data values:
 
