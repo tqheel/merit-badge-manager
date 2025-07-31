@@ -91,6 +91,8 @@ The server will be available at:
 - **Fuzzy Name Matching**: Intelligent matching of MBC names across data sources
 - **Database Management**: SQLite database with proper schema and relationships
 - **Adult Roster Management**: Complete adult member database with training, merit badges, and positions
+- **Youth Roster Management**: Comprehensive Scout tracking with merit badge progress, advancement history, and parent contacts
+- **Scout-to-Counselor Integration**: Seamless assignment system connecting Scouts with adult merit badge counselors
 - **Reporting & Export**: Generate actionable reports and Excel exports
 - **MBC Assignment Engine**: Intelligent assignment recommendations
 
@@ -101,9 +103,9 @@ The server will be available at:
 - **YAML Format Validation**: Proper multi-line content formatting for complete issue publishing
 
 ### Database & Testing
-- **Schema Management**: Automated database schema creation and validation
-- **Test Data Generation**: Realistic fake data for development and testing
-- **Comprehensive Test Suite**: Full test coverage for database functionality
+- **Schema Management**: Automated database schema creation and validation for both adult and youth rosters
+- **Test Data Generation**: Realistic fake data for development and testing with integrated adult-youth relationships
+- **Comprehensive Test Suite**: Full test coverage for database functionality including cross-system integration
 
 ### Future Enhancements
 - Web application interface
@@ -116,9 +118,11 @@ The server will be available at:
 merit-badge-manager/
 ├── data/                          # Data files (CSV imports)
 ├── db-scripts/                    # Database setup and schema scripts
-│   ├── create_adult_roster_schema.sql  # Complete database schema
+│   ├── create_adult_roster_schema.sql  # Adult database schema
+│   ├── youth_database_schema.sql       # Youth database schema
 │   └── setup_database.py         # Automated database creation
 ├── docs/                          # Documentation
+│   └── youth-database-schema.md   # Youth roster schema documentation
 ├── logs/                          # Application logs
 ├── mcp_server/                    # MCP server implementation
 │   └── main.py                    # FastAPI server with GitHub integration
@@ -126,7 +130,8 @@ merit-badge-manager/
 │   ├── create_test_database.py   # Test database with fake data generator
 │   └── publish_features.py       # Feature publishing script
 ├── tests/                         # Test files
-│   ├── test_database_schema.py   # Database schema and functionality tests
+│   ├── test_database_schema.py   # Adult database schema and functionality tests
+│   ├── test_youth_database_schema.py   # Youth database schema and integration tests
 │   ├── test_mcp_server.py        # MCP server tests
 │   └── test_roster_parser.py     # Roster parsing tests
 ├── workitems/                     # Work item management
@@ -275,17 +280,20 @@ python scripts/publish_features.py
 
 ### Creating the Production Database
 
-The application uses SQLite for data storage with a comprehensive schema for adult roster management.
+The application uses SQLite for data storage with comprehensive schemas for both adult and youth roster management.
 
 ```bash
 # Make sure virtual environment is activated first!
 source venv/bin/activate
 
-# Create production database with default name (merit_badge_manager.db)
+# Create production database with both adult and youth schemas (default)
 python db-scripts/setup_database.py
 
 # Create database with custom name and verify schema
 python db-scripts/setup_database.py -d my_database.db --verify
+
+# Create adult-only database (legacy mode)
+python db-scripts/setup_database.py --adults-only
 
 # Force recreation of existing database
 python db-scripts/setup_database.py --force
@@ -293,13 +301,13 @@ python db-scripts/setup_database.py --force
 
 ### Creating a Test Database with Fake Data
 
-For development and testing purposes, you can create a test database populated with realistic fake data:
+For development and testing purposes, you can create a test database populated with realistic fake data for both adult and youth rosters:
 
 ```bash
 # Make sure virtual environment is activated first!
 source venv/bin/activate
 
-# Create test database with fake adult roster data
+# Create test database with fake adult and youth roster data
 python scripts/create_test_database.py
 
 # Create test database with custom name
@@ -310,61 +318,99 @@ The test database includes:
 - **5 adult members** with complete profiles
 - **14 training records** (YPT, Position Specific, IOLS, etc.)
 - **21 merit badge counselor assignments** across various merit badges
-- **6 position records** with tenure information
+- **6 adult position records** with tenure information
+- **15 youth members (Scouts)** with complete demographics and advancement
+- **45 Scout training records** with appropriate expiration tracking
+- **18 Scout position assignments** including patrol leadership roles
+- **45 parent/guardian contacts** (up to 4 per Scout)
+- **25 merit badge progress records** with Scout-to-counselor assignments
+- **30 advancement history entries** tracking rank progression
 
 ### Testing the Database
 
-Run the comprehensive test suite to verify database functionality:
+Run the comprehensive test suite to verify database functionality for both adult and youth systems:
 
 ```bash
 # Make sure virtual environment is activated first!
 source venv/bin/activate
 
-# Run all database tests
-python -m pytest tests/test_database_schema.py -v
+# Run all database tests (adult and youth)
+python -m pytest tests/test_database_schema.py tests/test_youth_database_schema.py -v
 
-# Run specific test categories
+# Run specific adult database tests
 python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_database_creation -v
 python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_schema_validation -v
 python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_fake_data_generation -v
+
+# Run specific youth database tests
+python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_youth_schema_creation -v
+python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_scout_counselor_integration -v
+python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_validation_views -v
 ```
 
 ### Database Schema Overview
 
-The database includes four main tables:
+The database includes comprehensive schemas for both adult and youth roster management:
 
-**Core Tables:**
+**Adult Tables:**
 - `adults` - Primary member information (names, contact, BSA numbers, demographics)
 - `adult_training` - Training certifications with expiration tracking
 - `adult_merit_badges` - Merit badge counselor certifications
 - `adult_positions` - Position history with tenure information
 
+**Youth Tables:**
+- `scouts` - Core Scout information (rank, BSA number, patrol assignments, activity status)
+- `scout_training` - Scout training certifications with expiration tracking
+- `scout_positions` - Leadership positions and patrol assignments with tenure information
+- `parent_guardians` - Parent/guardian contact information (up to 4 per Scout)
+- `scout_merit_badge_progress` - Merit badge work tracking with counselor assignments
+- `scout_advancement_history` - Historical record of rank progression
+
+**Integration Features:**
+- **Scout-to-Counselor Assignments**: Connects Scouts with adult merit badge counselors
+- **Cross-System BSA Number Matching**: Enables data reconciliation between systems
+- **Shared Validation Patterns**: Consistent data quality across adult and youth systems
+
 **Performance Features:**
-- 12 optimized indexes for common query patterns
-- 4 validation views for data quality checks and reporting
-- Foreign key constraints with cascade delete
-- Automatic timestamp triggers
+- **36 optimized indexes** for common query patterns across both systems
+- **12 validation views** for data quality checks and operational reporting
+- Foreign key constraints with cascade delete for data integrity
+- Automatic timestamp triggers for audit trails
 
 ### Validating Database Content
 
-After creating a database, you can validate its content:
+After creating a database, you can validate its content for both adult and youth data:
 
 ```bash
 # Connect to database and run validation queries
 sqlite3 merit_badge_test_database.db
 
-# Sample validation commands:
+# Sample validation commands for adult data:
 sqlite> SELECT COUNT(*) as adult_count FROM adults;
 sqlite> SELECT * FROM current_positions;
 sqlite> SELECT merit_badge_name, counselor_count FROM merit_badge_counselors LIMIT 5;
+
+# Sample validation commands for youth data:
+sqlite> SELECT COUNT(*) as scout_count FROM scouts;
+sqlite> SELECT * FROM active_scouts_with_positions LIMIT 5;
+sqlite> SELECT * FROM scouts_needing_counselors LIMIT 5;
+sqlite> SELECT patrol_name, scout_count FROM patrol_assignments;
+
+# Integration validation:
+sqlite> SELECT s.first_name, s.last_name, smbp.merit_badge_name, a.first_name as counselor_first, a.last_name as counselor_last 
+        FROM scout_merit_badge_progress smbp
+        JOIN scouts s ON smbp.scout_id = s.id
+        JOIN adults a ON smbp.counselor_adult_id = a.id
+        LIMIT 5;
 sqlite> .quit
 ```
 
 ### Database Files
 
-- **Production Database**: `merit_badge_manager.db` (main application database)
-- **Test Database**: `test_merit_badge_manager.db` (created by test script)
-- **Schema File**: `db-scripts/create_adult_roster_schema.sql` (complete SQL schema)
+- **Production Database**: `merit_badge_manager.db` (main application database with both adult and youth schemas)
+- **Test Database**: `test_merit_badge_manager.db` (created by test script with sample data)
+- **Adult Schema File**: `db-scripts/create_adult_roster_schema.sql` (adult database schema)
+- **Youth Schema File**: `db-scripts/youth_database_schema.sql` (youth database schema)
 - **Setup Script**: `db-scripts/setup_database.py` (automated database creation)
 
-See `db-scripts/README.md` for detailed database documentation.
+See `db-scripts/README.md` and `docs/youth-database-schema.md` for detailed database documentation.

@@ -25,6 +25,11 @@ Include issue number in all commit messages.
 - Update compatible dependencies that are not breaking changes.
 - Label all Github issues that are sub-issues of Feature requests as `user story`.
 - Use YAML block literal syntax (|) for multi-line content in feature/bug templates to prevent content truncation.
+- When working with youth roster functionality, ensure integration with adult roster system through proper foreign key relationships.
+- Test both adult and youth database schemas when making changes to ensure cross-system compatibility.
+- Validate Scout-to-counselor assignment functionality when modifying merit badge progress tracking.
+- Include parent/guardian contact validation when working with Scout data.
+- Test validation views for both adult and youth systems to ensure data quality checks function properly.
 
 ## Never:
 - Never include any passwords, API keys, or sensitive information in the codebase except in secure configuration files that are not committed to the repository.
@@ -32,3 +37,7 @@ Include issue number in all commit messages.
 - Never commit code that does not pass the automated tests.
 - Never use global variables unless absolutely necessary.
 - Never include any PII or or any other Troop data in the codebase, test cases, documentaion, comments, or Github issues.
+- Never modify youth database schema without ensuring backward compatibility with adult roster system.
+- Never delete Scout data without proper CASCADE DELETE constraints to maintain referential integrity.
+- Never bypass parent/guardian contact validation when working with Scout information.
+- Never create merit badge assignments without proper counselor validation from adult roster.
