@@ -1,0 +1,105 @@
+name: Implement Youth Database Schema
+description: Create and implement the normalized SQLite database schema for youth (Scout) roster data to support merit badge counselor management and Scout tracking functionality.
+
+detailed_description: |
+  ## Overview
+  
+  This feature implements a comprehensive SQLite database schema for storing Youth (Scout) roster data imported from CSV files. The schema is designed to normalize the complex youth roster data structure into efficient, queryable tables that support merit badge counselor management and Scout tracking.
+  
+  ## Database Schema Components
+  
+  ### Core Tables
+  1. **scouts** - Core Scout information including rank, BSA number, dates, OA status, and activity status
+  2. **scout_training** - Training records and certifications with expiration tracking
+  3. **scout_positions** - Leadership positions and patrol assignments with tenure information
+  4. **parent_guardians** - Up to 4 parent/guardian contacts per Scout with full contact details
+  5. **scout_merit_badge_progress** - Future merit badge tracking and counselor assignments
+  6. **scout_advancement_history** - Rank progression tracking over time
+  
+  ### Performance Optimization
+  - Comprehensive indexing strategy for efficient queries
+  - Foreign key constraints for data integrity
+  - Optimized views for common query patterns
+  
+  ### Integration Features
+  - Scout-to-counselor assignments through merit badge progress table
+  - Fuzzy name matching support between Scout data and merit badge in-progress reports
+  - Parent contact information for communication about merit badge assignments
+  - Training status tracking for Scout readiness determination
+  - Rank tracking to ensure merit badge requirements align with advancement goals
+
+acceptance_criteria:
+  - Database schema SQL files created in db-scripts directory
+  - Schema includes all six normalized tables with proper constraints
+  - Performance indexes implemented for common query patterns
+  - Database setup script created to initialize youth schema
+  - Test database generation script updated to include youth data
+  - Integration points documented for merit badge counselor system
+  - Data import processing logic documented for complex CSV fields
+  - Common query views created for active scouts, positions, and assignments
+
+priority: high
+estimated_effort: large
+labels:
+  - enhancement
+  - database
+  - youth-management
+dependencies:
+  - Adult roster database schema must be completed first
+  - CSV data import module should be functional
+
+technical_notes: |
+  ## Data Processing Considerations
+  
+  ### Scout Training Data
+  - Training field contains pipe-separated training courses with complex formatting
+  - Each training item includes course code, name, and expiration date
+  - Example: "S97 ILST-Intro Leadership Skills-Troops (does not expire) | SCO_3008 Overview and Policies (does not expire)"
+  - Youth training is typically position-specific or advancement-related
+  
+  ### Position Data Processing
+  - Positions field contains complex tenure information with patrol assignments
+  - Example: "Patrol Leader [ Dragon Fruit] Patrol (5m 1d) | Scouts BSA [ Dragon Fruit] Patrol (2y 5m 6d) | Scribe (11m 3d)"
+  - Format: position title, optional patrol name in brackets, tenure duration in parentheses
+  - Multiple positions may be held simultaneously (current and historical)
+  
+  ### Parent/Guardian Data Processing
+  - Up to 4 parent/guardian contacts per Scout
+  - Each contact has complete address and multiple phone number fields
+  - First guardian is typically considered primary contact
+  - Phone numbers may have various formats requiring normalization
+  
+  ### Data Quality Considerations
+  - BSA Numbers are unique identifiers for matching between systems
+  - Some patrol names are generic: "Anonymous Message", "2025 Inactive and Aged Out"
+  - Age-based activity status determination (18+ aged out)
+  - Rank hierarchy validation: Scout → Tenderfoot → Second Class → First Class → Star → Life → Eagle
+
+implementation_plan: |
+  1. **Schema Creation** (Priority 1)
+     - Create youth_database_schema.sql with all table definitions
+     - Include comprehensive indexes and constraints
+     - Add common views for frequent queries
+  
+  2. **Setup Scripts** (Priority 2)
+     - Update setup_database.py to include youth schema initialization
+     - Create youth-specific database setup validation
+     - Add youth schema to automated testing framework
+  
+  3. **Test Data Generation** (Priority 3)
+     - Update create_test_database.py to generate realistic youth data
+     - Include varied patrol assignments and position histories
+     - Generate realistic parent/guardian contact information
+  
+  4. **Integration Documentation** (Priority 4)
+     - Document data import processing requirements
+     - Create integration guidelines for merit badge system
+     - Update specification with youth database schema details
+
+testing_requirements: |
+  - Database schema validation tests
+  - Foreign key constraint verification
+  - Index performance testing with sample data
+  - Data import processing logic tests
+  - Integration tests with adult roster system
+  - Query performance benchmarks for common operations

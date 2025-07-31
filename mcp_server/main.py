@@ -568,48 +568,51 @@ async def load_feature_yml(yml_filename: str) -> Dict[str, Any]:
 
 def convert_yml_to_github_issue(workitem_data: Dict[str, Any]) -> GitHubIssueData:
     """Convert workitem YAML data (feature or bug) to GitHub issue format."""
-    # Extract the template data
+    
+    # Check if this is a GitHub issue template format or custom format
     body_sections = workitem_data.get("body", [])
     
-    title = ""
-    description_content = ""
-    steps_content = ""
-    expected_content = ""
-    problem_content = ""
-    solution_content = ""
-    additional_context = ""
-    
-    # Extract content from YAML structure
-    for section in body_sections:
-        if section.get("type") == "textarea":
-            field_id = section.get("id", "")
-            # For our YAML structure, the actual content is in the placeholder field
-            # This is where the real feature/bug content is stored
-            content = section.get("attributes", {}).get("placeholder", "")
-            
-            # Bug report fields
-            if field_id == "description":
-                description_content = content
-            elif field_id == "steps":
-                steps_content = content
-            elif field_id == "expected":
-                expected_content = content
-            # Feature request fields
-            elif field_id == "problem":
-                problem_content = content
-            elif field_id == "solution":
-                solution_content = content
-            elif field_id == "context":
-                additional_context = content
-    
-    # Generate title from description field in workitem_data
-    title = workitem_data.get("description", "Workitem")
-    
-    # Determine if this is a bug or feature and format accordingly
-    labels = workitem_data.get("labels", [])
-    if "bug" in labels:
-        # Format as bug report
-        body = f"""## Description
+    # If body sections exist, use the original template-based approach
+    if body_sections:
+        title = ""
+        description_content = ""
+        steps_content = ""
+        expected_content = ""
+        problem_content = ""
+        solution_content = ""
+        additional_context = ""
+        
+        # Extract content from YAML structure
+        for section in body_sections:
+            if section.get("type") == "textarea":
+                field_id = section.get("id", "")
+                # For our YAML structure, the actual content is in the placeholder field
+                # This is where the real feature/bug content is stored
+                content = section.get("attributes", {}).get("placeholder", "")
+                
+                # Bug report fields
+                if field_id == "description":
+                    description_content = content
+                elif field_id == "steps":
+                    steps_content = content
+                elif field_id == "expected":
+                    expected_content = content
+                # Feature request fields
+                elif field_id == "problem":
+                    problem_content = content
+                elif field_id == "solution":
+                    solution_content = content
+                elif field_id == "context":
+                    additional_context = content
+        
+        # Generate title from description field in workitem_data
+        title = workitem_data.get("description", "Workitem")
+        
+        # Determine if this is a bug or feature and format accordingly
+        labels = workitem_data.get("labels", [])
+        if "bug" in labels:
+            # Format as bug report
+            body = f"""## Description
 {description_content}
 
 ## Steps to Reproduce
@@ -624,9 +627,9 @@ def convert_yml_to_github_issue(workitem_data: Dict[str, Any]) -> GitHubIssueDat
 ---
 *This issue was automatically created from bug report template.*
 """
-    else:
-        # Format as feature request
-        body = f"""## Problem Statement
+        else:
+            # Format as feature request
+            body = f"""## Problem Statement
 {problem_content}
 
 ## Proposed Solution
@@ -638,7 +641,70 @@ def convert_yml_to_github_issue(workitem_data: Dict[str, Any]) -> GitHubIssueDat
 ---
 *This issue was automatically created from feature request template.*
 """
+    else:
+        # Handle custom YAML format (our feature/bug files)
+        title = workitem_data.get("description", workitem_data.get("name", "Workitem"))
+        
+        # Build comprehensive body from all available fields
+        body_parts = []
+        
+        # Add detailed description if available
+        detailed_desc = workitem_data.get("detailed_description", "")
+        if detailed_desc:
+            body_parts.append(f"## Overview\n\n{detailed_desc}")
+        
+        # Add acceptance criteria
+        acceptance_criteria = workitem_data.get("acceptance_criteria", [])
+        if acceptance_criteria:
+            if isinstance(acceptance_criteria, list):
+                criteria_text = "\n".join(f"- {criteria}" for criteria in acceptance_criteria)
+            else:
+                criteria_text = acceptance_criteria
+            body_parts.append(f"## Acceptance Criteria\n\n{criteria_text}")
+        
+        # Add technical notes
+        technical_notes = workitem_data.get("technical_notes", "")
+        if technical_notes:
+            body_parts.append(f"## Technical Notes\n\n{technical_notes}")
+        
+        # Add implementation plan
+        implementation_plan = workitem_data.get("implementation_plan", "")
+        if implementation_plan:
+            body_parts.append(f"## Implementation Plan\n\n{implementation_plan}")
+        
+        # Add testing requirements
+        testing_requirements = workitem_data.get("testing_requirements", "")
+        if testing_requirements:
+            body_parts.append(f"## Testing Requirements\n\n{testing_requirements}")
+        
+        # Add priority and effort estimation
+        metadata_parts = []
+        priority = workitem_data.get("priority", "")
+        if priority:
+            metadata_parts.append(f"**Priority:** {priority}")
+        
+        estimated_effort = workitem_data.get("estimated_effort", "")
+        if estimated_effort:
+            metadata_parts.append(f"**Estimated Effort:** {estimated_effort}")
+        
+        dependencies = workitem_data.get("dependencies", [])
+        if dependencies:
+            if isinstance(dependencies, list):
+                deps_text = "\n".join(f"- {dep}" for dep in dependencies)
+            else:
+                deps_text = dependencies
+            metadata_parts.append(f"**Dependencies:**\n{deps_text}")
+        
+        if metadata_parts:
+            body_parts.append(f"## Metadata\n\n{chr(10).join(metadata_parts)}")
+        
+        # Join all parts
+        body = "\n\n".join(body_parts)
+        
+        # Add footer
+        body += "\n\n---\n*This issue was automatically created from YAML work item.*"
     
+    labels = workitem_data.get("labels", [])
     return GitHubIssueData(title=title, body=body, labels=labels)
 
 async def create_github_issue(issue_data: GitHubIssueData) -> Dict[str, Any]:
