@@ -60,8 +60,16 @@ This document specifies the requirements and architecture for the Scouting Ameri
 - Data import and cleaning modules
 - Fuzzy name matching algorithm
 - Database schema for scouts, adults, and merit badge assignments
+- Database testing infrastructure with fake data generation
 - Reporting and export functionality
 - MCP server for Copilot integration
+
+### 5.3 Database Management
+- SQLite database with adult roster schema
+- Automated schema creation and validation
+- Test database generation with realistic fake data
+- Comprehensive test suite for database functionality
+- Performance optimization with indexes and views
 
 ## 6. Future Enhancements
 ### 6.1 Web Application
