@@ -139,16 +139,24 @@ def display_validation_results(results: Dict[str, ValidationResult]) -> bool:
     for file_type, result in results.items():
         # Create expandable section for each file type
         with st.expander(f"{'✅' if result.is_valid else '❌'} {file_type} - {'PASS' if result.is_valid else 'FAIL'}", expanded=not result.is_valid):
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             
             with col1:
                 st.metric("Rows Processed", result.row_count)
             with col2:
                 st.metric("Valid Rows", result.valid_rows)
             with col3:
-                st.metric("Errors", len(result.errors), delta=None if len(result.errors) == 0 else f"-{len(result.errors)}")
+                st.metric("Skipped Rows", len(result.skipped_records), delta=None if len(result.skipped_records) == 0 else f"-{len(result.skipped_records)}")
             with col4:
+                st.metric("Errors", len(result.errors), delta=None if len(result.errors) == 0 else f"-{len(result.errors)}")
+            with col5:
                 st.metric("Warnings", len(result.warnings), delta=None if len(result.warnings) == 0 else f"-{len(result.warnings)}")
+            
+            # Show skipped records
+            if result.skipped_records:
+                st.info("**Records skipped (duplicates):**")
+                for skipped in result.skipped_records:
+                    st.info(f"• {skipped}")
             
             # Show errors
             if result.errors:
@@ -279,7 +287,7 @@ if page == "Settings":
         st.subheader("Configuration")
         
         # Filter out backend server configuration items
-        backend_server_configs = {'GITHUB_TOKEN', 'HOST', 'PORT'}
+        backend_server_configs = {'GITHUB_TOKEN', 'HOST', 'PORT', 'GITHUB_REPO', 'ENVIRONMENT'}
         
         # Merge template with current values
         env_vars = {}
