@@ -282,7 +282,7 @@ elif page == "CSV Import":
                     importer = RosterImporter()
                     
                     st.info("Importing roster data...")
-                    success = importer.import_roster_data()
+                    success = importer.run_import()
                     
                     if success:
                         st.success("✅ Data imported successfully!")
