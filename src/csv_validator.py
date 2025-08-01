@@ -74,7 +74,7 @@ class CSVValidator:
     # Valid rank values for youth
     VALID_YOUTH_RANKS = [
         'Scout', 'Tenderfoot', 'Second Class', 'First Class', 
-        'Star', 'Life', 'Eagle', ''
+        'Star', 'Life', 'Eagle', 'NO RANK', ''
     ]
     
     # Valid activity status values

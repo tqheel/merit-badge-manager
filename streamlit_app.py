@@ -17,15 +17,17 @@ import sys
 import sqlite3
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import logging
+import shutil
+from datetime import datetime
 
 # Add the src and scripts directories to the Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent / "db-scripts"))
 
-from csv_validator import CSVValidator, ValidationResult
+from csv_validator import CSVValidator, ValidationResult, print_validation_summary
 from roster_parser import RosterParser
 from setup_database import create_database_schema
 
@@ -85,6 +87,126 @@ def save_env_file(env_vars: Dict[str, str]) -> bool:
     except Exception as e:
         st.error(f"Error saving .env file: {e}")
         return False
+
+def backup_database(db_path: str = "merit_badge_manager.db") -> Optional[str]:
+    """
+    Create a backup of the current database.
+    
+    Returns:
+        Path to backup file if successful, None otherwise
+    """
+    if not Path(db_path).exists():
+        return None
+    
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = f"{db_path}.backup_{timestamp}"
+        shutil.copy2(db_path, backup_path)
+        return backup_path
+    except Exception as e:
+        st.error(f"Error creating database backup: {e}")
+        return None
+
+def restore_database(backup_path: str, db_path: str = "merit_badge_manager.db") -> bool:
+    """
+    Restore database from backup.
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        if Path(backup_path).exists():
+            shutil.copy2(backup_path, db_path)
+            return True
+        return False
+    except Exception as e:
+        st.error(f"Error restoring database: {e}")
+        return False
+
+def display_validation_results(results: Dict[str, ValidationResult]) -> bool:
+    """
+    Display validation results in Streamlit format.
+    
+    Returns:
+        True if all validations passed, False otherwise
+    """
+    overall_valid = True
+    total_errors = 0
+    total_warnings = 0
+    
+    st.subheader("📋 Validation Results")
+    
+    for file_type, result in results.items():
+        # Create expandable section for each file type
+        with st.expander(f"{'✅' if result.is_valid else '❌'} {file_type} - {'PASS' if result.is_valid else 'FAIL'}", expanded=not result.is_valid):
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Rows Processed", result.row_count)
+            with col2:
+                st.metric("Valid Rows", result.valid_rows)
+            with col3:
+                st.metric("Errors", len(result.errors), delta=None if len(result.errors) == 0 else f"-{len(result.errors)}")
+            with col4:
+                st.metric("Warnings", len(result.warnings), delta=None if len(result.warnings) == 0 else f"-{len(result.warnings)}")
+            
+            # Show errors
+            if result.errors:
+                st.error("**Errors found:**")
+                for error in result.errors:
+                    st.error(f"• {error}")
+            
+            # Show warnings
+            if result.warnings:
+                st.warning("**Warnings found:**")
+                for warning in result.warnings:
+                    st.warning(f"• {warning}")
+        
+        if not result.is_valid:
+            overall_valid = False
+        
+        total_errors += len(result.errors)
+        total_warnings += len(result.warnings)
+    
+    # Overall summary
+    if overall_valid:
+        st.success(f"🎉 **All validations passed!** Total warnings: {total_warnings}")
+    else:
+        st.error(f"❌ **Validation failed!** Total errors: {total_errors}, Total warnings: {total_warnings}")
+        st.error("🚨 Cannot proceed with import - Please fix validation errors first!")
+    
+    return overall_valid
+
+def run_validation_only(roster_file_path: Path) -> Tuple[bool, Dict[str, ValidationResult]]:
+    """
+    Run validation on roster files and return results.
+    
+    Returns:
+        Tuple of (overall_valid, results_dict)
+    """
+    try:
+        # Parse the roster file to get adult and youth sections
+        parser = RosterParser(str(roster_file_path), "output")
+        adult_file, youth_file = parser.parse_roster()
+        
+        # Validate the parsed output files
+        validator = CSVValidator()
+        results = {}
+        
+        if os.path.exists(adult_file):
+            results["Adult Roster"] = validator.validate_adult_roster(adult_file)
+        
+        if os.path.exists(youth_file):
+            results["Youth Roster"] = validator.validate_youth_roster(youth_file)
+        
+        # Calculate overall validity
+        overall_valid = all(result.is_valid for result in results.values())
+        
+        return overall_valid, results
+        
+    except Exception as e:
+        st.error(f"Validation error: {e}")
+        return False, {}
 
 def get_database_connection():
     """Get SQLite database connection."""
@@ -241,6 +363,14 @@ elif page == "CSV Import":
         else:
             st.warning("⚠️ Not found (optional)")
     
+    # Validation results storage in session state
+    if 'validation_results' not in st.session_state:
+        st.session_state.validation_results = None
+    if 'validation_passed' not in st.session_state:
+        st.session_state.validation_passed = False
+    if 'db_backup_path' not in st.session_state:
+        st.session_state.db_backup_path = None
+    
     # Import options
     st.subheader("🚀 Import Actions")
     
@@ -249,31 +379,97 @@ elif page == "CSV Import":
     with col1:
         if st.button("Validate Only", disabled=not roster_exists):
             with st.spinner("Validating CSV files..."):
-                try:
-                    # Validate roster file
-                    validator = CSVValidator()
-                    result = validator.validate_adult_roster(str(roster_path))
-                    
-                    if result.is_valid:
-                        st.success("✅ Validation passed!")
-                    else:
-                        st.error("❌ Validation failed!")
-                        for error in result.errors:
-                            st.error(f"• {error}")
-                    
-                    if result.warnings:
-                        for warning in result.warnings:
-                            st.warning(f"⚠️ {warning}")
+                validation_passed, validation_results = run_validation_only(roster_path)
+                st.session_state.validation_results = validation_results
+                st.session_state.validation_passed = validation_passed
+    
+    # Display validation results if available
+    if st.session_state.validation_results:
+        validation_passed = display_validation_results(st.session_state.validation_results)
+        st.session_state.validation_passed = validation_passed
+        
+        # Show import options based on validation results
+        if not validation_passed:
+            st.subheader("🛠️ Import Options")
+            st.warning("⚠️ Validation failed. Choose how to proceed:")
+            
+            col_a, col_b = st.columns(2)
+            
+            with col_a:
+                if st.button("🔧 Force Import (Skip Validation)", type="secondary"):
+                    with st.spinner("Creating database backup and importing data..."):
+                        try:
+                            # Create backup before import
+                            backup_path = backup_database()
+                            if backup_path:
+                                st.session_state.db_backup_path = backup_path
+                                st.info(f"✅ Database backed up to: {backup_path}")
                             
-                except Exception as e:
-                    st.error(f"Validation error: {e}")
+                            # Create/recreate database
+                            st.info("Setting up database...")
+                            if Path("merit_badge_manager.db").exists():
+                                Path("merit_badge_manager.db").unlink()
+                            create_database_schema("merit_badge_manager.db", include_youth=True)
+                            
+                            # Import roster data with force flag
+                            from import_roster import RosterImporter
+                            importer = RosterImporter()
+                            
+                            st.info("Importing roster data (skipping validation)...")
+                            success = importer.run_import(force=True)
+                            
+                            if success:
+                                st.success("✅ Data imported successfully (with validation errors)!")
+                                st.balloons()
+                                # Clear validation results
+                                st.session_state.validation_results = None
+                            else:
+                                st.error("❌ Import failed!")
+                                # Restore backup if available
+                                if st.session_state.db_backup_path:
+                                    if restore_database(st.session_state.db_backup_path):
+                                        st.info("🔄 Database restored from backup")
+                                
+                        except Exception as e:
+                            st.error(f"Import error: {e}")
+                            # Restore backup if available
+                            if st.session_state.db_backup_path:
+                                if restore_database(st.session_state.db_backup_path):
+                                    st.info("🔄 Database restored from backup")
+            
+            with col_b:
+                if st.button("❌ Abort Import", type="secondary"):
+                    st.session_state.validation_results = None
+                    st.session_state.validation_passed = False
+                    st.info("Import aborted. Please fix validation errors and try again.")
+                    st.rerun()
     
     with col2:
-        if st.button("Import Data", disabled=not roster_exists):
-            with st.spinner("Importing data..."):
+        # Only enable import if validation passed or no validation has been run
+        import_disabled = roster_exists and st.session_state.validation_results is not None and not st.session_state.validation_passed
+        
+        if st.button("Import Data", disabled=not roster_exists or import_disabled):
+            with st.spinner("Validating and importing data..."):
                 try:
+                    # Run validation first
+                    validation_passed, validation_results = run_validation_only(roster_path)
+                    
+                    if not validation_passed:
+                        st.session_state.validation_results = validation_results
+                        st.session_state.validation_passed = validation_passed
+                        st.error("❌ Validation failed! Please review errors above and choose how to proceed.")
+                        st.rerun()
+                        
+                    # Create backup before import
+                    backup_path = backup_database()
+                    if backup_path:
+                        st.session_state.db_backup_path = backup_path
+                        st.info(f"✅ Database backed up to: {backup_path}")
+                    
                     # Create/recreate database
                     st.info("Setting up database...")
+                    if Path("merit_badge_manager.db").exists():
+                        Path("merit_badge_manager.db").unlink()
                     create_database_schema("merit_badge_manager.db", include_youth=True)
                     
                     # Import roster data
@@ -286,16 +482,31 @@ elif page == "CSV Import":
                     if success:
                         st.success("✅ Data imported successfully!")
                         st.balloons()
+                        # Clear validation results
+                        st.session_state.validation_results = None
                     else:
                         st.error("❌ Import failed!")
+                        # Restore backup if available
+                        if st.session_state.db_backup_path:
+                            if restore_database(st.session_state.db_backup_path):
+                                st.info("🔄 Database restored from backup")
                         
                 except Exception as e:
                     st.error(f"Import error: {e}")
+                    # Restore backup if available
+                    if st.session_state.db_backup_path:
+                        if restore_database(st.session_state.db_backup_path):
+                            st.info("🔄 Database restored from backup")
     
     with col3:
         if st.button("Reset Database"):
             with st.spinner("Resetting database..."):
                 try:
+                    # Create backup before reset
+                    backup_path = backup_database()
+                    if backup_path:
+                        st.info(f"✅ Database backed up to: {backup_path}")
+                    
                     # Remove existing database
                     db_path = Path("merit_badge_manager.db")
                     if db_path.exists():
@@ -305,8 +516,37 @@ elif page == "CSV Import":
                     create_database_schema("merit_badge_manager.db", include_youth=True)
                     st.success("✅ Database reset successfully!")
                     
+                    # Clear session state
+                    st.session_state.validation_results = None
+                    st.session_state.validation_passed = False
+                    
                 except Exception as e:
                     st.error(f"Reset error: {e}")
+    
+    # Show backup information if available
+    if st.session_state.db_backup_path:
+        st.info(f"💾 **Current backup:** `{st.session_state.db_backup_path}`")
+        
+        col_restore, col_cleanup = st.columns(2)
+        with col_restore:
+            if st.button("🔄 Restore from Backup"):
+                if restore_database(st.session_state.db_backup_path):
+                    st.success("✅ Database restored from backup!")
+                    st.session_state.validation_results = None
+                    st.session_state.validation_passed = False
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to restore from backup")
+        
+        with col_cleanup:
+            if st.button("🗑️ Remove Backup"):
+                try:
+                    Path(st.session_state.db_backup_path).unlink()
+                    st.session_state.db_backup_path = None
+                    st.success("✅ Backup file removed")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error removing backup: {e}")
 
 elif page == "Database Views":
     st.header("📊 Database Views")
