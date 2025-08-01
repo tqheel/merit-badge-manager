@@ -16,8 +16,12 @@ from dotenv import load_dotenv
 # Add the src directory to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+# Add the db-scripts directory to the Python path for database functions
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'db-scripts'))
+
 from csv_validator import CSVValidator, ValidationResult, print_validation_summary
 from roster_parser import RosterParser
+from setup_database import create_database_schema, verify_schema
 
 
 class RosterImporter:
@@ -33,8 +37,9 @@ class RosterImporter:
         Args:
             config_file: Path to environment configuration file
         """
-        # Load environment configuration
-        load_dotenv(config_file)
+        # Load environment configuration from the specified file only
+        # Override=True ensures we don't pick up other .env files
+        load_dotenv(config_file, override=True)
         
         self.roster_csv_file = os.getenv('ROSTER_CSV_FILE', 'roster_report.csv')
         self.mb_progress_csv_file = os.getenv('MB_PROGRESS_CSV_FILE', 'merit_badge_progress.csv')
@@ -161,8 +166,8 @@ class RosterImporter:
                 
                 print(f"📋 Detailed validation report generated: {report_file}")
                 
-                # Ask user if they want to see the report
-                if not overall_valid:
+                # In non-interactive mode (like tests), don't prompt
+                if not overall_valid and sys.stdin.isatty():
                     response = input("\n❓ Would you like to see the detailed validation report? (y/n): ").lower().strip()
                     if response in ['y', 'yes']:
                         self._show_validation_report(report_file)
@@ -195,10 +200,6 @@ class RosterImporter:
             True if successful, False otherwise
         """
         try:
-            # Import the database setup script
-            sys.path.insert(0, str(self.db_scripts_dir))
-            from setup_database import create_database_schema, verify_schema
-            
             db_path = "merit_badge_manager.db"
             
             # Remove existing database if it exists
@@ -231,8 +232,8 @@ class RosterImporter:
             return False
 
 
-def main():
-    """Main function to handle command line arguments and run the import."""
+def _main_impl(args_list=None):
+    """Implementation of main function that can be easily tested."""
     import argparse
     
     parser = argparse.ArgumentParser(
@@ -254,13 +255,13 @@ def main():
         help="Run validation only, do not import"
     )
     
-    args = parser.parse_args()
+    args = parser.parse_args(args_list)
     
     # Check if configuration file exists
     if not os.path.exists(args.config):
         print(f"❌ Configuration file not found: {args.config}")
         print(f"   Please copy .env.template to .env and configure your settings")
-        sys.exit(1)
+        return 1
     
     # Create importer instance
     importer = RosterImporter(args.config)
@@ -272,20 +273,30 @@ def main():
         
         if not roster_file_path.exists():
             print(f"❌ Roster file not found: {roster_file_path}")
-            sys.exit(1)
+            return 1
         
         success = importer._run_validation(roster_file_path)
-        sys.exit(0 if success else 1)
+        return 0 if success else 1
     
     # Run full import
     success = importer.run_import(force=args.force)
     
     if success:
         print("\n✅ Import process completed successfully!")
-        sys.exit(0)
+        return 0
     else:
         print("\n❌ Import process failed!")
-        sys.exit(1)
+        return 1
+
+
+def main():
+    """Main function to handle command line arguments and run the import."""
+    try:
+        exit_code = _main_impl()
+        sys.exit(exit_code)
+    except SystemExit:
+        # Re-raise SystemExit to ensure proper exit behavior
+        raise
 
 
 if __name__ == "__main__":
