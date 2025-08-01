@@ -421,7 +421,7 @@ elif page == "CSV Import":
                             
                             # Import roster data with force flag
                             from import_roster import RosterImporter
-                            importer = RosterImporter()
+                            importer = RosterImporter(ui_mode=True)
                             
                             st.info("Importing roster data (skipping validation)...")
                             success = importer.run_import(force=True)
@@ -482,7 +482,7 @@ elif page == "CSV Import":
                     
                     # Import roster data
                     from import_roster import RosterImporter
-                    importer = RosterImporter()
+                    importer = RosterImporter(ui_mode=True)
                     
                     st.info("Importing roster data...")
                     success = importer.run_import()

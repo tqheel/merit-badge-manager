@@ -32,16 +32,19 @@ class RosterImporter:
     database recreation, and data import.
     """
     
-    def __init__(self, config_file: str = ".env"):
+    def __init__(self, config_file: str = ".env", ui_mode: bool = False):
         """
         Initialize the importer with configuration.
         
         Args:
             config_file: Path to environment configuration file
+            ui_mode: Set to True when running from Streamlit UI to disable interactive prompts
         """
         # Load environment configuration from the specified file only
         # Override=True ensures we don't pick up other .env files
         load_dotenv(config_file, override=True)
+        
+        self.ui_mode = ui_mode
         
         self.roster_csv_file = os.getenv('ROSTER_CSV_FILE', 'roster_report.csv')
         self.mb_progress_csv_file = os.getenv('MB_PROGRESS_CSV_FILE', 'merit_badge_progress.csv')
@@ -174,8 +177,8 @@ class RosterImporter:
                 
                 print(f"📋 Detailed validation report generated: {report_file}")
                 
-                # In non-interactive mode (like tests), don't prompt
-                if not overall_valid and sys.stdin.isatty():
+                # In non-interactive mode (like tests or UI), don't prompt
+                if not overall_valid and sys.stdin.isatty() and not self.ui_mode:
                     response = input("\n❓ Would you like to see the detailed validation report? (y/n): ").lower().strip()
                     if response in ['y', 'yes']:
                         self._show_validation_report(report_file)
