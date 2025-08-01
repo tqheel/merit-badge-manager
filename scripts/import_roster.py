@@ -315,6 +315,7 @@ class RosterImporter:
     def _import_adult_data(self, csv_file_path: str) -> int:
         """
         Import adult data from CSV file into adults table.
+        Automatically skips duplicate BSA numbers using database constraints.
         
         Args:
             csv_file_path: Path to the adult CSV file
@@ -332,6 +333,8 @@ class RosterImporter:
         
         try:
             imported_count = 0
+            skipped_count = 0
+            skipped_records = []
             
             with open(csv_file_path, 'r', encoding='utf-8') as file:
                 reader = csv.DictReader(file)
@@ -342,34 +345,60 @@ class RosterImporter:
                     if not bsa_number.strip():
                         continue  # Skip rows without BSA numbers
                     
-                    # Insert adult record
-                    cursor.execute("""
-                        INSERT INTO adults (
-                            first_name, last_name, email, city, state, zip,
-                            age_category, date_joined, bsa_number, unit_number,
-                            oa_info, health_form_status, swim_class, swim_class_date,
-                            positions_tenure
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        row.get('First Name', '') or row.get('first_name', ''),
-                        row.get('Last Name', '') or row.get('last_name', ''),
-                        row.get('Email', '') or row.get('email', '') or None,
-                        row.get('City', '') or row.get('city', '') or None,
-                        row.get('State', '') or row.get('state', '') or None,
-                        row.get('Zip', '') or row.get('zip', '') or None,
-                        row.get('Age Category', '') or row.get('age_category', '') or None,
-                        row.get('Date Joined', '') or row.get('date_joined', '') or None,
-                        int(bsa_number),
-                        row.get('Unit Number', '') or row.get('unit_number', '') or None,
-                        row.get('OA Info', '') or row.get('oa_info', '') or None,
-                        row.get('Health Form Status', '') or row.get('health_form_status', '') or None,
-                        row.get('Swim Class', '') or row.get('swim_class', '') or None,
-                        row.get('Swim Class Date', '') or row.get('swim_class_date', '') or None,
-                        row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None
-                    ))
-                    imported_count += 1
+                    first_name = row.get('First Name', '') or row.get('first_name', '')
+                    last_name = row.get('Last Name', '') or row.get('last_name', '')
+                    
+                    try:
+                        # Use INSERT OR IGNORE to handle duplicate BSA numbers gracefully
+                        cursor.execute("""
+                            INSERT OR IGNORE INTO adults (
+                                first_name, last_name, email, city, state, zip,
+                                age_category, date_joined, bsa_number, unit_number,
+                                oa_info, health_form_status, swim_class, swim_class_date,
+                                positions_tenure
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            first_name,
+                            last_name,
+                            row.get('Email', '') or row.get('email', '') or None,
+                            row.get('City', '') or row.get('city', '') or None,
+                            row.get('State', '') or row.get('state', '') or None,
+                            row.get('Zip', '') or row.get('zip', '') or None,
+                            row.get('Age Category', '') or row.get('age_category', '') or None,
+                            row.get('Date Joined', '') or row.get('date_joined', '') or None,
+                            int(bsa_number),
+                            row.get('Unit Number', '') or row.get('unit_number', '') or None,
+                            row.get('OA Info', '') or row.get('oa_info', '') or None,
+                            row.get('Health Form Status', '') or row.get('health_form_status', '') or None,
+                            row.get('Swim Class', '') or row.get('swim_class', '') or None,
+                            row.get('Swim Class Date', '') or row.get('swim_class_date', '') or None,
+                            row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None
+                        ))
+                        
+                        # Check if the row was actually inserted
+                        if cursor.rowcount > 0:
+                            imported_count += 1
+                        else:
+                            # Row was ignored due to duplicate BSA number
+                            skipped_count += 1
+                            skipped_records.append(f"BSA #{bsa_number}: {first_name} {last_name}")
+                            
+                    except ValueError as e:
+                        # Handle invalid BSA number conversion
+                        print(f"   ⚠️  Skipped row with invalid BSA number '{bsa_number}': {first_name} {last_name}")
+                        skipped_count += 1
+                        continue
             
             conn.commit()
+            
+            # Report skipped records if any
+            if skipped_count > 0:
+                print(f"   ⏭️  Skipped {skipped_count} duplicate adult records:")
+                for record in skipped_records[:5]:  # Show first 5
+                    print(f"      • {record}")
+                if len(skipped_records) > 5:
+                    print(f"      ... and {len(skipped_records) - 5} more")
+            
             return imported_count
             
         except Exception as e:
@@ -381,6 +410,7 @@ class RosterImporter:
     def _import_youth_data(self, csv_file_path: str) -> int:
         """
         Import youth data from CSV file into scouts table.
+        Automatically skips duplicate BSA numbers using database constraints.
         
         Args:
             csv_file_path: Path to the youth CSV file
@@ -398,6 +428,8 @@ class RosterImporter:
         
         try:
             imported_count = 0
+            skipped_count = 0
+            skipped_records = []
             
             with open(csv_file_path, 'r', encoding='utf-8') as file:
                 reader = csv.DictReader(file)
@@ -408,43 +440,69 @@ class RosterImporter:
                     if not bsa_number.strip():
                         continue  # Skip rows without BSA numbers
                     
+                    first_name = row.get('First Name', '') or row.get('first_name', '')
+                    last_name = row.get('Last Name', '') or row.get('last_name', '')
+                    
                     # Get age field
                     age_str = row.get('Age', '') or row.get('age', '')
                     age = int(age_str) if age_str.strip() and age_str.strip().isdigit() else None
                     
-                    # Insert scout record
-                    cursor.execute("""
-                        INSERT INTO scouts (
-                            first_name, last_name, bsa_number, unit_number, rank,
-                            date_joined, date_of_birth, age, patrol_name, activity_status,
-                            oa_info, email, phone, address_line1, address_line2,
-                            city, state, zip, positions_tenure, training_raw
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        row.get('First Name', '') or row.get('first_name', ''),
-                        row.get('Last Name', '') or row.get('last_name', ''),
-                        int(bsa_number),
-                        row.get('Unit Number', '') or row.get('unit_number', '') or None,
-                        row.get('Rank', '') or row.get('rank', '') or None,
-                        row.get('Date Joined', '') or row.get('date_joined', '') or None,
-                        row.get('Date of Birth', '') or row.get('date_of_birth', '') or None,
-                        age,
-                        row.get('Patrol Name', '') or row.get('patrol_name', '') or None,
-                        row.get('Activity Status', '') or row.get('activity_status', '') or None,
-                        row.get('OA Info', '') or row.get('oa_info', '') or None,
-                        row.get('Email', '') or row.get('email', '') or None,
-                        row.get('Phone', '') or row.get('phone', '') or None,
-                        row.get('Address Line1', '') or row.get('address_line1', '') or None,
-                        row.get('Address Line2', '') or row.get('address_line2', '') or None,
-                        row.get('City', '') or row.get('city', '') or None,
-                        row.get('State', '') or row.get('state', '') or None,
-                        row.get('Zip', '') or row.get('zip', '') or None,
-                        row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None,
-                        row.get('Training Raw', '') or row.get('training_raw', '') or None
-                    ))
-                    imported_count += 1
+                    try:
+                        # Use INSERT OR IGNORE to handle duplicate BSA numbers gracefully
+                        cursor.execute("""
+                            INSERT OR IGNORE INTO scouts (
+                                first_name, last_name, bsa_number, unit_number, rank,
+                                date_joined, date_of_birth, age, patrol_name, activity_status,
+                                oa_info, email, phone, address_line1, address_line2,
+                                city, state, zip, positions_tenure, training_raw
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            first_name,
+                            last_name,
+                            int(bsa_number),
+                            row.get('Unit Number', '') or row.get('unit_number', '') or None,
+                            row.get('Rank', '') or row.get('rank', '') or None,
+                            row.get('Date Joined', '') or row.get('date_joined', '') or None,
+                            row.get('Date of Birth', '') or row.get('date_of_birth', '') or None,
+                            age,
+                            row.get('Patrol Name', '') or row.get('patrol_name', '') or None,
+                            row.get('Activity Status', '') or row.get('activity_status', '') or None,
+                            row.get('OA Info', '') or row.get('oa_info', '') or None,
+                            row.get('Email', '') or row.get('email', '') or None,
+                            row.get('Phone', '') or row.get('phone', '') or None,
+                            row.get('Address Line1', '') or row.get('address_line1', '') or None,
+                            row.get('Address Line2', '') or row.get('address_line2', '') or None,
+                            row.get('City', '') or row.get('city', '') or None,
+                            row.get('State', '') or row.get('state', '') or None,
+                            row.get('Zip', '') or row.get('zip', '') or None,
+                            row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None,
+                            row.get('Training Raw', '') or row.get('training_raw', '') or None
+                        ))
+                        
+                        # Check if the row was actually inserted
+                        if cursor.rowcount > 0:
+                            imported_count += 1
+                        else:
+                            # Row was ignored due to duplicate BSA number
+                            skipped_count += 1
+                            skipped_records.append(f"BSA #{bsa_number}: {first_name} {last_name}")
+                            
+                    except ValueError as e:
+                        # Handle invalid BSA number conversion
+                        print(f"   ⚠️  Skipped row with invalid BSA number '{bsa_number}': {first_name} {last_name}")
+                        skipped_count += 1
+                        continue
             
             conn.commit()
+            
+            # Report skipped records if any
+            if skipped_count > 0:
+                print(f"   ⏭️  Skipped {skipped_count} duplicate scout records:")
+                for record in skipped_records[:5]:  # Show first 5
+                    print(f"      • {record}")
+                if len(skipped_records) > 5:
+                    print(f"      ... and {len(skipped_records) - 5} more")
+            
             return imported_count
             
         except Exception as e:

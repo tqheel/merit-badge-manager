@@ -88,6 +88,30 @@ def save_env_file(env_vars: Dict[str, str]) -> bool:
         st.error(f"Error saving .env file: {e}")
         return False
 
+def get_environment() -> str:
+    """Get the current environment setting (development/production)."""
+    try:
+        env_vars = load_env_file()
+        return env_vars.get('ENVIRONMENT', 'production').lower()
+    except:
+        return 'production'
+
+def display_error_with_details(message: str, exception: Exception = None):
+    """Display error message with optional detailed information in development mode."""
+    st.error(message)
+    
+    # Show detailed error information in development mode
+    if get_environment() == 'development' and exception:
+        with st.expander("🔍 Detailed Error Information (Development Mode)", expanded=False):
+            st.code(f"Exception Type: {type(exception).__name__}")
+            st.code(f"Exception Message: {str(exception)}")
+            
+            # Show traceback if available
+            import traceback
+            tb = traceback.format_exc()
+            if tb != "NoneType: None\n":
+                st.code(f"Traceback:\n{tb}")
+
 def backup_database(db_path: str = "merit_badge_manager.db") -> Optional[str]:
     """
     Create a backup of the current database.
@@ -486,7 +510,7 @@ elif page == "CSV Import":
                                             st.info("🔄 Database restored from backup")
                                 
                         except Exception as e:
-                            st.error(f"Import error: {e}")
+                            display_error_with_details("Import error occurred during forced import", e)
                             # Restore backup if available
                             if st.session_state.db_backup_path:
                                 if restore_database(st.session_state.db_backup_path):
@@ -547,7 +571,7 @@ elif page == "CSV Import":
                                     st.info("🔄 Database restored from backup")
                         
                 except Exception as e:
-                    st.error(f"Import error: {e}")
+                    display_error_with_details("Import error occurred during normal import", e)
                     # Restore backup if available
                     if st.session_state.db_backup_path:
                         if restore_database(st.session_state.db_backup_path):
@@ -576,7 +600,7 @@ elif page == "CSV Import":
                     st.session_state.validation_passed = False
                     
                 except Exception as e:
-                    st.error(f"Reset error: {e}")
+                    display_error_with_details("Database reset error occurred", e)
     
     # Show backup information if available
     if st.session_state.db_backup_path:
