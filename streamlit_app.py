@@ -156,26 +156,25 @@ if page == "Settings":
     with st.form("env_settings"):
         st.subheader("Configuration")
         
+        # Filter out backend server configuration items
+        backend_server_configs = {'GITHUB_TOKEN', 'HOST', 'PORT'}
+        
         # Merge template with current values
         env_vars = {}
         for key, default_value in env_template.items():
+            # Skip backend server configuration items
+            if key in backend_server_configs:
+                continue
+                
             current_value = current_env.get(key, default_value)
             
-            if key in ['GITHUB_TOKEN']:
-                # Password field for sensitive data
-                env_vars[key] = st.text_input(
-                    f"{key}:", 
-                    value=current_value,
-                    type="password",
+            if key in ['VALIDATE_BEFORE_IMPORT', 'GENERATE_VALIDATION_REPORTS']:
+                # Boolean fields as toggles
+                env_vars[key] = 'true' if st.checkbox(
+                    f"{key.replace('_', ' ').title()}:",
+                    value=current_value.lower() == 'true',
                     help=f"Default: {default_value}"
-                )
-            elif key in ['VALIDATE_BEFORE_IMPORT', 'GENERATE_VALIDATION_REPORTS']:
-                # Boolean fields
-                env_vars[key] = st.selectbox(
-                    f"{key}:",
-                    ['true', 'false'],
-                    index=0 if current_value.lower() == 'true' else 1
-                )
+                ) else 'false'
             else:
                 # Regular text fields
                 env_vars[key] = st.text_input(
