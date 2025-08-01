@@ -123,6 +123,53 @@ def restore_database(backup_path: str, db_path: str = "merit_badge_manager.db") 
         st.error(f"Error restoring database: {e}")
         return False
 
+def recreate_database_safely(db_path: str = "merit_badge_manager.db") -> bool:
+    """
+    Safely recreate the database by handling file locks and ensuring clean deletion.
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        import time
+        import sqlite3
+        
+        # First, try to close any existing connections by attempting a dummy connection
+        # This helps ensure no lingering connections are holding locks
+        if Path(db_path).exists():
+            try:
+                # Try to connect and immediately close to flush any pending operations
+                conn = sqlite3.connect(db_path, timeout=1.0)
+                conn.close()
+                time.sleep(0.1)  # Brief pause to allow cleanup
+            except:
+                pass  # Ignore connection errors, we're just trying to clean up
+            
+            # Remove the existing database file
+            try:
+                Path(db_path).unlink()
+                time.sleep(0.1)  # Brief pause after deletion
+            except FileNotFoundError:
+                pass  # File already gone, that's fine
+            except PermissionError as e:
+                st.error(f"❌ Cannot delete database file (file may be in use): {e}")
+                return False
+            except Exception as e:
+                st.error(f"❌ Error deleting database file: {e}")
+                return False
+        
+        # Create the new database schema
+        success = create_database_schema(db_path, include_youth=True)
+        if not success:
+            st.error("❌ Database schema creation failed")
+            return False
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"❌ Unexpected error during database recreation: {e}")
+        return False
+
 def display_validation_results(results: Dict[str, ValidationResult]) -> bool:
     """
     Display validation results in Streamlit format.
@@ -415,28 +462,28 @@ elif page == "CSV Import":
                             
                             # Create/recreate database
                             st.info("Setting up database...")
-                            if Path("merit_badge_manager.db").exists():
-                                Path("merit_badge_manager.db").unlink()
-                            create_database_schema("merit_badge_manager.db", include_youth=True)
-                            
-                            # Import roster data with force flag
-                            from import_roster import RosterImporter
-                            importer = RosterImporter(ui_mode=True)
-                            
-                            st.info("Importing roster data (skipping validation)...")
-                            success = importer.run_import(force=True)
-                            
-                            if success:
-                                st.success("✅ Data imported successfully (with validation errors)!")
-                                st.balloons()
-                                # Clear validation results
-                                st.session_state.validation_results = None
+                            success = recreate_database_safely("merit_badge_manager.db")
+                            if not success:
+                                st.error("❌ Failed to create database schema!")
                             else:
-                                st.error("❌ Import failed!")
-                                # Restore backup if available
-                                if st.session_state.db_backup_path:
-                                    if restore_database(st.session_state.db_backup_path):
-                                        st.info("🔄 Database restored from backup")
+                                # Import roster data with force flag
+                                from import_roster import RosterImporter
+                                importer = RosterImporter(ui_mode=True)
+                                
+                                st.info("Importing roster data (skipping validation)...")
+                                success = importer.run_import(force=True)
+                                
+                                if success:
+                                    st.success("✅ Data imported successfully (with validation errors)!")
+                                    st.balloons()
+                                    # Clear validation results
+                                    st.session_state.validation_results = None
+                                else:
+                                    st.error("❌ Import failed!")
+                                    # Restore backup if available
+                                    if st.session_state.db_backup_path:
+                                        if restore_database(st.session_state.db_backup_path):
+                                            st.info("🔄 Database restored from backup")
                                 
                         except Exception as e:
                             st.error(f"Import error: {e}")
@@ -476,28 +523,28 @@ elif page == "CSV Import":
                     
                     # Create/recreate database
                     st.info("Setting up database...")
-                    if Path("merit_badge_manager.db").exists():
-                        Path("merit_badge_manager.db").unlink()
-                    create_database_schema("merit_badge_manager.db", include_youth=True)
-                    
-                    # Import roster data
-                    from import_roster import RosterImporter
-                    importer = RosterImporter(ui_mode=True)
-                    
-                    st.info("Importing roster data...")
-                    success = importer.run_import()
-                    
-                    if success:
-                        st.success("✅ Data imported successfully!")
-                        st.balloons()
-                        # Clear validation results
-                        st.session_state.validation_results = None
+                    success = recreate_database_safely("merit_badge_manager.db")
+                    if not success:
+                        st.error("❌ Failed to create database schema!")
                     else:
-                        st.error("❌ Import failed!")
-                        # Restore backup if available
-                        if st.session_state.db_backup_path:
-                            if restore_database(st.session_state.db_backup_path):
-                                st.info("🔄 Database restored from backup")
+                        # Import roster data
+                        from import_roster import RosterImporter
+                        importer = RosterImporter(ui_mode=True)
+                        
+                        st.info("Importing roster data...")
+                        success = importer.run_import()
+                        
+                        if success:
+                            st.success("✅ Data imported successfully!")
+                            st.balloons()
+                            # Clear validation results
+                            st.session_state.validation_results = None
+                        else:
+                            st.error("❌ Import failed!")
+                            # Restore backup if available
+                            if st.session_state.db_backup_path:
+                                if restore_database(st.session_state.db_backup_path):
+                                    st.info("🔄 Database restored from backup")
                         
                 except Exception as e:
                     st.error(f"Import error: {e}")

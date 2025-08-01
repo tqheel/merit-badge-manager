@@ -211,12 +211,34 @@ class RosterImporter:
             True if successful, False otherwise
         """
         try:
+            import time
             db_path = "merit_badge_manager.db"
             
-            # Remove existing database if it exists
+            # First, try to close any existing connections by attempting a dummy connection
+            # This helps ensure no lingering connections are holding locks
             if os.path.exists(db_path):
-                os.remove(db_path)
-                print(f"   🗑️  Removed existing database: {db_path}")
+                try:
+                    # Try to connect and immediately close to flush any pending operations
+                    import sqlite3
+                    conn = sqlite3.connect(db_path, timeout=1.0)
+                    conn.close()
+                    time.sleep(0.1)  # Brief pause to allow cleanup
+                except:
+                    pass  # Ignore connection errors, we're just trying to clean up
+                
+                # Remove existing database if it exists
+                try:
+                    os.remove(db_path)
+                    print(f"   🗑️  Removed existing database: {db_path}")
+                    time.sleep(0.1)  # Brief pause after deletion
+                except FileNotFoundError:
+                    pass  # File already gone, that's fine
+                except PermissionError as e:
+                    print(f"❌ Cannot delete database file (file may be in use): {e}")
+                    return False
+                except Exception as e:
+                    print(f"❌ Error deleting database file: {e}")
+                    return False
             
             # Create new database with schema
             print(f"   🏗️  Creating new database schema...")

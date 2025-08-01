@@ -114,6 +114,12 @@ END;
 -- VALIDATION VIEWS (for data quality checks)
 -- =============================================================================
 
+-- Drop existing views if they exist to ensure clean recreation
+DROP VIEW IF EXISTS adults_missing_data;
+DROP VIEW IF EXISTS training_expiration_summary;
+DROP VIEW IF EXISTS merit_badge_counselors;
+DROP VIEW IF EXISTS current_positions;
+
 -- View to identify adults with missing required information
 CREATE VIEW adults_missing_data AS
 SELECT 
