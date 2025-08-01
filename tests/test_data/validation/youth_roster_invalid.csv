@@ -1,0 +1,6 @@
+first_name,last_name,bsa_number,unit_number,rank,date_joined,date_of_birth,age,patrol_name,activity_status,oa_info,email,phone,address_line1,address_line2,city,state,zip,positions_tenure,training_raw
+Tommy,Scout,INVALID_BSA,212,InvalidRank,2023-01-15,2010-05-20,13,Eagles,Active,,INVALID_EMAIL,555-123-4567,123 Main St,,Anytown,NC,12345,Patrol Leader (6m),YPT Current
+,Johnson,99887765,212,Tenderfoot,INVALID_DATE,2009-12-15,NOT_A_NUMBER,Bears,InvalidStatus,OA Member,sarah.johnson@email.com,INVALID_PHONE,456 Oak Ave,Apt 2,Somewhere,NC,23456,,YPT Current
+Mike,,99887764,212,First Class,2021-03-20,2008-08-30,150,Wolves,Active,,mike.anderson@email.com,555-345-6789,789 Pine St,,Elsewhere,NC,34567,Assistant Patrol Leader (1y),YPT Current
+Alex,Brown,,212,Life,2020-06-01,2007-03-10,16,Eagles,Active,OA Member,alex.brown@email.com,555-456-7890,321 Elm Dr,,Hometown,NC,45678,Senior Patrol Leader (2y 3m),YPT Current
+Sarah,Duplicate,99887765,212,Scout,2023-01-15,2010-05-20,13,Eagles,Active,,sarah.duplicate@email.com,555-123-4567,123 Main St,,Anytown,NC,12345,Duplicate BSA Number Test,YPT Current
