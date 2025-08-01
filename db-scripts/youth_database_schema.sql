@@ -179,6 +179,16 @@ END;
 -- VALIDATION VIEWS (for data quality checks)
 -- =============================================================================
 
+-- Drop existing views if they exist to ensure clean recreation
+DROP VIEW IF EXISTS scouts_missing_data;
+DROP VIEW IF EXISTS active_scouts_with_positions;
+DROP VIEW IF EXISTS merit_badge_progress_summary;
+DROP VIEW IF EXISTS scouts_needing_counselors;
+DROP VIEW IF EXISTS advancement_progress_by_rank;
+DROP VIEW IF EXISTS primary_parent_contacts;
+DROP VIEW IF EXISTS scout_training_expiration_summary;
+DROP VIEW IF EXISTS patrol_assignments;
+
 -- View to identify scouts with missing required information
 CREATE VIEW scouts_missing_data AS
 SELECT 

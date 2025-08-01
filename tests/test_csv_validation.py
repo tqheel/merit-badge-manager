@@ -48,7 +48,10 @@ class TestCSVValidator(unittest.TestCase):
         self.assertIn("Invalid BSA number format", error_text)
         self.assertIn("First name is required", error_text)
         self.assertIn("Last name is required", error_text)
-        self.assertIn("Duplicate BSA number", error_text)
+        
+        # Check for skipped duplicate records
+        skipped_text = " ".join(result.skipped_records)
+        self.assertIn("Skipped duplicate BSA number", skipped_text)
     
     def test_youth_roster_valid(self):
         """Test validation of valid youth roster data."""
@@ -78,7 +81,10 @@ class TestCSVValidator(unittest.TestCase):
         self.assertIn("BSA number is required", error_text)
         self.assertIn("Invalid activity status", error_text)
         self.assertIn("Age must be a number", error_text)
-        self.assertIn("Duplicate BSA number", error_text)
+        
+        # Check for skipped duplicate records
+        skipped_text = " ".join(result.skipped_records)
+        self.assertIn("Skipped duplicate BSA number", skipped_text)
     
     def test_file_not_found(self):
         """Test validation when CSV file doesn't exist."""
@@ -298,6 +304,15 @@ class TestValidationResult(unittest.TestCase):
         self.assertEqual(len(result.warnings), 1)
         self.assertEqual(result.warnings[0], "Test warning")
     
+    def test_add_skipped_record(self):
+        """Test adding skipped records to ValidationResult."""
+        result = ValidationResult()
+        
+        result.add_skipped_record("Test skipped record")
+        self.assertTrue(result.is_valid)  # Skipped records don't affect validity
+        self.assertEqual(len(result.skipped_records), 1)
+        self.assertEqual(result.skipped_records[0], "Test skipped record")
+    
     def test_has_issues(self):
         """Test has_issues method."""
         result = ValidationResult()
@@ -308,6 +323,10 @@ class TestValidationResult(unittest.TestCase):
         
         result = ValidationResult()
         result.add_error("Error")
+        self.assertTrue(result.has_issues())
+        
+        result = ValidationResult()
+        result.add_skipped_record("Skipped record")
         self.assertTrue(result.has_issues())
 
 

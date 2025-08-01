@@ -23,6 +23,11 @@ class ValidationResult:
         self.warnings = warnings or []
         self.row_count = 0
         self.valid_rows = 0
+        self.skipped_records = []  # List of records skipped due to duplicates
+    
+    def add_skipped_record(self, record_info: str):
+        """Add a skipped record (doesn't affect validity)."""
+        self.skipped_records.append(record_info)
     
     def add_error(self, error: str):
         """Add an error and mark validation as invalid."""
@@ -34,8 +39,8 @@ class ValidationResult:
         self.warnings.append(warning)
     
     def has_issues(self) -> bool:
-        """Check if there are any errors or warnings."""
-        return len(self.errors) > 0 or len(self.warnings) > 0
+        """Check if there are any errors, warnings, or skipped records."""
+        return len(self.errors) > 0 or len(self.warnings) > 0 or len(self.skipped_records) > 0
 
 
 class CSVValidator:
@@ -74,7 +79,7 @@ class CSVValidator:
     # Valid rank values for youth
     VALID_YOUTH_RANKS = [
         'Scout', 'Tenderfoot', 'Second Class', 'First Class', 
-        'Star', 'Life', 'Eagle', ''
+        'Star', 'Life', 'Eagle', 'NO RANK', ''
     ]
     
     # Valid activity status values
@@ -173,7 +178,7 @@ class CSVValidator:
                 
                 # Validate data rows
                 row_number = 1  # Start at 1 for header
-                bsa_numbers_seen = set()
+                bsa_numbers_seen = {}  # Track BSA number to first occurrence info
                 
                 for row in reader:
                     row_number += 1
@@ -181,11 +186,22 @@ class CSVValidator:
                     
                     # Check for duplicate BSA numbers
                     bsa_number = self._get_normalized_value(row, 'bsa_number')
+                    first_name = self._get_normalized_value(row, 'first_name')
+                    last_name = self._get_normalized_value(row, 'last_name')
+                    
                     if bsa_number and bsa_number in bsa_numbers_seen:
-                        result.add_error(f"Row {row_number}: Duplicate BSA number '{bsa_number}'")
+                        # Skip duplicate record and report it
+                        first_occurrence = bsa_numbers_seen[bsa_number]
+                        result.add_skipped_record(
+                            f"Row {row_number}: Skipped duplicate BSA number '{bsa_number}' for {first_name} {last_name} "
+                            f"(first occurrence: Row {first_occurrence['row']}, {first_occurrence['name']})"
+                        )
                         continue
                     elif bsa_number:
-                        bsa_numbers_seen.add(bsa_number)
+                        bsa_numbers_seen[bsa_number] = {
+                            'row': row_number,
+                            'name': f"{first_name} {last_name}"
+                        }
                     
                     # Validate individual row
                     row_result = row_validator(row, row_number)
@@ -427,8 +443,15 @@ class CSVValidator:
                 f.write(f"Status: {'PASS' if result.is_valid else 'FAIL'}\n")
                 f.write(f"Total Rows: {result.row_count}\n")
                 f.write(f"Valid Rows: {result.valid_rows}\n")
+                f.write(f"Skipped Rows: {len(result.skipped_records)}\n")
                 f.write(f"Errors: {len(result.errors)}\n")
                 f.write(f"Warnings: {len(result.warnings)}\n\n")
+                
+                if result.skipped_records:
+                    f.write("SKIPPED RECORDS (Duplicates):\n")
+                    for skipped in result.skipped_records:
+                        f.write(f"  ⏭️  {skipped}\n")
+                    f.write("\n")
                 
                 if result.errors:
                     f.write("ERRORS:\n")
@@ -499,6 +522,7 @@ def print_validation_summary(results: Dict[str, ValidationResult]) -> bool:
         print(f"\n{status_icon} {file_type}: {'PASS' if result.is_valid else 'FAIL'}")
         print(f"   Rows processed: {result.row_count}")
         print(f"   Valid rows: {result.valid_rows}")
+        print(f"   Skipped rows: {len(result.skipped_records)}")
         print(f"   Errors: {len(result.errors)}")
         print(f"   Warnings: {len(result.warnings)}")
         
@@ -507,6 +531,14 @@ def print_validation_summary(results: Dict[str, ValidationResult]) -> bool:
         
         total_errors += len(result.errors)
         total_warnings += len(result.warnings)
+        
+        # Show skipped records for immediate attention
+        if result.skipped_records:
+            print(f"\n   Skipped records (duplicates):")
+            for skipped in result.skipped_records[:3]:
+                print(f"     ⏭️  {skipped}")
+            if len(result.skipped_records) > 3:
+                print(f"     ... and {len(result.skipped_records) - 3} more skipped records")
         
         # Show first few errors for immediate attention
         if result.errors:
