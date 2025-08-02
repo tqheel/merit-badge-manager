@@ -392,7 +392,10 @@ class RosterImporter:
                                                   row.get('Merit_Badge_Counselor_For', ''))
                                 
                                 if merit_badges_raw and merit_badges_raw.strip():
-                                    self._import_merit_badge_counselor_data(cursor, adult_id, merit_badges_raw, first_name, last_name)
+                                    # Quick check to ensure there are actual merit badges to process
+                                    merit_badges_preview = [mb.strip() for mb in merit_badges_raw.split(';') if mb.strip()]
+                                    if merit_badges_preview:
+                                        self._import_merit_badge_counselor_data(cursor, adult_id, merit_badges_raw, first_name, last_name)
                         else:
                             # Row was ignored due to duplicate BSA number
                             skipped_count += 1

@@ -195,7 +195,44 @@ def test_empty_merit_badge_field():
         print("✅ Empty merit badge field test passed!")
 
 
+def test_edge_case_semicolon_only():
+    """Test that fields with only semicolons are handled gracefully."""
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        
+        # Create test database
+        test_db = temp_path / "test.db"
+        create_database_schema(str(test_db), include_youth=True)
+        
+        # Create test importer and test the functionality directly
+        importer = RosterImporter()
+        
+        conn = sqlite3.connect(str(test_db))
+        cursor = conn.cursor()
+        
+        # Insert test adult
+        cursor.execute("INSERT INTO adults (first_name, last_name, email, bsa_number) VALUES (?, ?, ?, ?)", 
+                      ('John', 'Smith', 'john@test.com', 123456789))
+        adult_id = cursor.lastrowid
+        
+        # Test merit badge processing with semicolon-only fields
+        importer._import_merit_badge_counselor_data(cursor, adult_id, ';', 'John', 'Smith')  # Single semicolon
+        importer._import_merit_badge_counselor_data(cursor, adult_id, ';;', 'John', 'Smith')  # Multiple semicolons
+        
+        conn.commit()
+        
+        # Check merit badge data - should be empty
+        cursor.execute("SELECT COUNT(*) FROM adult_merit_badges")
+        mb_count = cursor.fetchone()[0]
+        assert mb_count == 0, f"Expected 0 merit badge assignments, got {mb_count}"
+        
+        conn.close()
+        print("✅ Edge case semicolon test passed!")
+
+
 if __name__ == "__main__":
     test_merit_badge_counselor_import()
     test_empty_merit_badge_field()
+    test_edge_case_semicolon_only()
     print("🎉 All Merit Badge Counselor import tests passed!")
