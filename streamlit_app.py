@@ -339,9 +339,10 @@ def display_view_data(view_name: str):
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.selectbox(
+page = st.sidebar.radio(
     "Choose a section:",
-    ["Settings", "CSV Import", "Database Views"]
+    ["Database Views", "Settings", "CSV Import"],
+    index=0
 )
 
 # Main content based on selected page
