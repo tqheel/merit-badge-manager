@@ -355,7 +355,7 @@ The database includes comprehensive schemas for both adult and youth roster mana
 **Adult Tables:**
 - `adults` - Primary member information (names, contact, BSA numbers, demographics)
 - `adult_training` - Training certifications with expiration tracking
-- `adult_merit_badges` - Merit badge counselor certifications
+- `adult_merit_badges` - Merit badge counselor qualifications (which badges adults can counsel for)
 - `adult_positions` - Position history with tenure information
 
 **Youth Tables:**

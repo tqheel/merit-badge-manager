@@ -386,7 +386,7 @@ class RosterImporter:
                             if adult_id_result:
                                 adult_id = adult_id_result[0]
                                 
-                                # Process merit badge counselor data
+                                # Process merit badge counselor qualification data
                                 merit_badges_raw = (row.get('Merit Badge Counselor For', '') or 
                                                   row.get('merit_badge_counselor_for', '') or 
                                                   row.get('Merit_Badge_Counselor_For', ''))
@@ -531,12 +531,16 @@ class RosterImporter:
     
     def _import_merit_badge_counselor_data(self, cursor, adult_id: int, merit_badges_raw: str, first_name: str, last_name: str):
         """
-        Import merit badge counselor data for an adult member.
+        Import merit badge counselor qualification data for an adult member.
+        
+        Note: This processes the merit badges that an adult is QUALIFIED to counsel for,
+        not merit badges assigned TO the adult. Adults select/offer these based on their
+        expertise. Scout-to-counselor assignments are handled separately by the Scoutmaster.
         
         Args:
             cursor: Database cursor
             adult_id: ID of the adult in the adults table
-            merit_badges_raw: Semicolon-separated list of merit badges
+            merit_badges_raw: Semicolon-separated list of merit badges the adult can counsel for
             first_name: Adult's first name (for logging)
             last_name: Adult's last name (for logging)
         """
@@ -561,7 +565,7 @@ class RosterImporter:
                         print(f"   ⚠️  Warning: Could not insert merit badge '{merit_badge_clean}' for {first_name} {last_name}: {e}")
             
             if mb_count > 0:
-                print(f"   🏅 Added {mb_count} merit badge counselor assignments for {first_name} {last_name}")
+                print(f"   🏅 Added {mb_count} merit badge counselor qualifications for {first_name} {last_name}")
                 
         except Exception as e:
             print(f"   ⚠️  Warning: Error processing merit badges for {first_name} {last_name}: {e}")

@@ -89,18 +89,18 @@ def test_merit_badge_counselor_import():
         # Check that adult_merit_badges table has records
         cursor.execute("SELECT COUNT(*) FROM adult_merit_badges")
         mb_count = cursor.fetchone()[0]
-        assert mb_count == 5, f"Expected 5 merit badge assignments, got {mb_count}"
+        assert mb_count == 5, f"Expected 5 merit badge qualifications, got {mb_count}"
         
-        # Check specific merit badge assignments
+        # Check specific merit badge qualifications
         cursor.execute("""
             SELECT a.first_name, a.last_name, amb.merit_badge_name 
             FROM adults a 
             JOIN adult_merit_badges amb ON a.id = amb.adult_id 
             ORDER BY a.first_name, amb.merit_badge_name
         """)
-        assignments = cursor.fetchall()
+        qualifications = cursor.fetchall()
         
-        expected_assignments = [
+        expected_qualifications = [
             ('Jane', 'Doe', 'Cooking'),
             ('Jane', 'Doe', 'First Aid'),
             ('John', 'Smith', 'Archery'),
@@ -108,7 +108,7 @@ def test_merit_badge_counselor_import():
             ('John', 'Smith', 'Camping')
         ]
         
-        assert assignments == expected_assignments, f"Expected {expected_assignments}, got {assignments}"
+        assert qualifications == expected_qualifications, f"Expected {expected_qualifications}, got {qualifications}"
         
         # Check the merit_badge_counselors view
         cursor.execute("SELECT COUNT(*) FROM merit_badge_counselors")
@@ -225,7 +225,7 @@ def test_edge_case_semicolon_only():
         # Check merit badge data - should be empty
         cursor.execute("SELECT COUNT(*) FROM adult_merit_badges")
         mb_count = cursor.fetchone()[0]
-        assert mb_count == 0, f"Expected 0 merit badge assignments, got {mb_count}"
+        assert mb_count == 0, f"Expected 0 merit badge qualifications, got {mb_count}"
         
         conn.close()
         print("✅ Edge case semicolon test passed!")
