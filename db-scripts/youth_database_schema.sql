@@ -95,12 +95,14 @@ CREATE TABLE parent_guardians (
     UNIQUE(scout_id, guardian_number)
 );
 
--- Scout Merit Badge Progress Table (Merit badge tracking and counselor assignments)
+-- Scout Merit Badge Progress Table (Tracks scouts' merit badge work and counselor assignments)
+-- Note: counselor_adult_id represents the Scoutmaster's assignment of a counselor to help a scout 
+-- with a specific merit badge. This is separate from counselor qualifications in adult_merit_badges.
 CREATE TABLE scout_merit_badge_progress (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     scout_id INTEGER NOT NULL,
     merit_badge_name TEXT NOT NULL,
-    counselor_adult_id INTEGER, -- Reference to adults table for counselor assignment
+    counselor_adult_id INTEGER, -- Reference to adults table for counselor assignment by Scoutmaster
     status TEXT DEFAULT 'Not Started', -- Not Started, In Progress, Completed, Approved
     date_started DATE,
     date_completed DATE,
@@ -238,7 +240,8 @@ FROM scout_merit_badge_progress mb
 GROUP BY mb.merit_badge_name
 ORDER BY scout_count DESC, mb.merit_badge_name;
 
--- View to show scouts needing merit badge counselors
+-- View to show scouts needing merit badge counselor assignments
+-- This shows scouts who have chosen merit badges but haven't been assigned counselors yet
 CREATE VIEW scouts_needing_counselors AS
 SELECT 
     s.first_name,

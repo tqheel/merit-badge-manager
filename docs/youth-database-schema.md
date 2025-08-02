@@ -48,17 +48,22 @@ Stores up to 4 parent/guardian contacts per Scout:
 - **Primary**: `is_primary` flag for main contact
 - **Constraint**: Unique per scout and guardian number
 
-#### 5. `scout_merit_badge_progress` - Merit Badge Tracking
-Tracks Scout merit badge work and counselor assignments:
+#### 5. `scout_merit_badge_progress` - Merit Badge Tracking and Counselor Assignments
+Tracks Scout merit badge work and counselor assignments made by the Scoutmaster:
 
 - **Foreign Key**: `scout_id` → `scouts.id`
-- **Merit Badge**: `merit_badge_name`
-- **Counselor**: `counselor_adult_id` (references adult roster)
+- **Merit Badge**: `merit_badge_name` (chosen by scout)
+- **Counselor Assignment**: `counselor_adult_id` (assigned by Scoutmaster from qualified counselors)
 - **Status**: `status` (Not Started, In Progress, Completed, Approved)
 - **Tracking**: `date_started`, `date_completed`
 - **Requirements**: `requirements_completed` (flexible format)
 - **Notes**: Additional information
 - **Constraint**: Unique per scout and merit badge
+
+**Key Merit Badge Flow:**
+1. Scout chooses a merit badge to work on
+2. Scoutmaster assigns a qualified counselor (from `adult_merit_badges` table)
+3. Progress is tracked in this table with counselor assignment
 
 #### 6. `scout_advancement_history` - Rank Progression
 Historical record of Scout advancement:
@@ -85,10 +90,16 @@ Historical record of Scout advancement:
 ### Integration Features
 
 #### Scout-to-Counselor Assignment System
-The `scout_merit_badge_progress` table provides the integration point between Scout data and adult merit badge counselors:
+The `scout_merit_badge_progress` table provides the integration point between Scout merit badge choices and adult counselor qualifications:
+
+**Merit Badge Assignment Process:**
+1. **Counselor Qualifications**: Adults indicate which merit badges they can counsel for (stored in adult roster `adult_merit_badges` table)
+2. **Scout Selection**: Scouts choose merit badges they want to work on
+3. **Scoutmaster Assignment**: Scoutmaster assigns qualified counselors to scouts for specific merit badges
+4. **Progress Tracking**: Work progress tracked in `scout_merit_badge_progress` table
 
 ```sql
--- Example: Assign counselor to scout for specific merit badge
+-- Example: Scoutmaster assigns counselor to scout for specific merit badge
 INSERT INTO scout_merit_badge_progress (
     scout_id, merit_badge_name, counselor_adult_id, 
     status, date_started

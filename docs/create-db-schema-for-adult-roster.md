@@ -64,13 +64,21 @@ CREATE TABLE adult_training (
 );
 ```
 
-### Adult Merit Badge Counselor Table
+### Adult Merit Badge Qualifications Table
+
+The `adult_merit_badges` table stores which merit badges each adult member is qualified to counsel for. This represents the merit badges that counselors **offer** or are **qualified** to help scouts with, not merit badges assigned to the adults themselves.
+
+**Key Points:**
+- Adults select which merit badges they are qualified to counsel for
+- This data comes from the "Merit Badge Counselor For" column in the adult roster CSV  
+- Scouts choose merit badges and are assigned to these qualified counselors by the Scoutmaster
+- The actual scout-to-counselor assignments are tracked separately in the youth database
 
 ```sql
 CREATE TABLE adult_merit_badges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     adult_id INTEGER NOT NULL,
-    merit_badge_name TEXT NOT NULL,
+    merit_badge_name TEXT NOT NULL, -- Merit badge the adult is qualified to counsel for
     FOREIGN KEY (adult_id) REFERENCES adults(id) ON DELETE CASCADE,
     UNIQUE(adult_id, merit_badge_name)
 );
@@ -122,10 +130,13 @@ CREATE INDEX idx_adult_positions_current ON adult_positions(is_current);
 - Expiration dates are in separate pipe-separated field: "(does not expire) | 06/21/2026"
 - Need to parse and match training items with their expiration dates by position
 
-### Merit Badge Data Processing
-- Merit badge field contains pipe-separated list of badge names
-- Example: "Bird Study | Citizenship in Society | Cit. in Comm. | Cit. in Nation"
-- Some adults have no merit badge counselor certifications (empty field)
+### Merit Badge Counselor Qualification Data Processing
+- Merit badge field contains pipe-separated list of badge names that the adult is qualified to counsel for
+- Example: "Bird Study | Citizenship in Society | Cit. in Comm. | Cit. in Nation"  
+- These represent qualifications/offerings by the counselor, not assignments to the counselor
+- Adults select which merit badges they are qualified to help scouts with based on their expertise
+- Some adults have no merit badge counselor qualifications (empty field)
+- The actual assignment of counselors to scouts happens separately via the Scoutmaster
 
 ### Position Data Processing
 - Positions field contains complex tenure information

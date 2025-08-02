@@ -53,11 +53,13 @@ CREATE TABLE adult_training (
     UNIQUE(adult_id, training_code)
 );
 
--- Adult Merit Badge Counselor Table (Merit badge counselor certifications)
+-- Adult Counselor Qualifications Table (Merit badges that adults are qualified to counsel for)
+-- Note: This represents merit badges that counselors OFFER/are qualified for, 
+-- NOT merit badges assigned TO adults. Scout-to-counselor assignments are tracked separately.
 CREATE TABLE adult_merit_badges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     adult_id INTEGER NOT NULL,
-    merit_badge_name TEXT NOT NULL,
+    merit_badge_name TEXT NOT NULL, -- Merit badge the adult is qualified to counsel for
     FOREIGN KEY (adult_id) REFERENCES adults(id) ON DELETE CASCADE,
     UNIQUE(adult_id, merit_badge_name)
 );
@@ -89,7 +91,7 @@ CREATE INDEX idx_adult_training_adult_id ON adult_training(adult_id);
 CREATE INDEX idx_adult_training_code ON adult_training(training_code);
 CREATE INDEX idx_adult_training_expiration ON adult_training(expiration_date);
 
--- Merit badge counselor indexes
+-- Counselor qualification indexes
 CREATE INDEX idx_adult_merit_badges_adult_id ON adult_merit_badges(adult_id);
 CREATE INDEX idx_adult_merit_badges_name ON adult_merit_badges(merit_badge_name);
 
@@ -157,7 +159,8 @@ FROM adults a
 JOIN adult_training t ON a.id = t.adult_id
 ORDER BY a.last_name, a.first_name, t.training_code;
 
--- View to show merit badge counselor assignments
+-- View to show available merit badge counselors by qualification
+-- Shows which merit badges have qualified counselors available to offer them
 CREATE VIEW merit_badge_counselors AS
 SELECT 
     mb.merit_badge_name,
@@ -200,7 +203,7 @@ FROM adults a
 LEFT JOIN adult_training t ON a.id = t.adult_id
 WHERE t.adult_id IS NULL;
 
--- Check for adults without any merit badge counselor certifications
+-- Check for adults without any merit badge counselor qualifications
 SELECT a.first_name, a.last_name, a.bsa_number
 FROM adults a
 LEFT JOIN adult_merit_badges mb ON a.id = mb.adult_id
@@ -230,6 +233,6 @@ WHERE status = 'Expired' OR status = 'Expiring Soon';
 -- =============================================================================
 
 SELECT 'Adult roster database schema created successfully!' as message;
-SELECT 'Tables created: adults, adult_training, adult_merit_badges, adult_positions' as tables_info;
+SELECT 'Tables created: adults, adult_training, adult_merit_badges (counselor qualifications), adult_positions' as tables_info;
 SELECT 'Indexes created for optimal query performance' as indexes_info;
 SELECT 'Views created for data validation and reporting' as views_info;

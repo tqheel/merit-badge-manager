@@ -378,6 +378,24 @@ class RosterImporter:
                         # Check if the row was actually inserted
                         if cursor.rowcount > 0:
                             imported_count += 1
+                            
+                            # Get the adult_id for merit badge assignments
+                            cursor.execute("SELECT id FROM adults WHERE bsa_number = ?", (int(bsa_number),))
+                            adult_id_result = cursor.fetchone()
+                            
+                            if adult_id_result:
+                                adult_id = adult_id_result[0]
+                                
+                                # Process merit badge counselor qualification data
+                                merit_badges_raw = (row.get('Merit Badge Counselor For', '') or 
+                                                  row.get('merit_badge_counselor_for', '') or 
+                                                  row.get('Merit_Badge_Counselor_For', ''))
+                                
+                                if merit_badges_raw and merit_badges_raw.strip():
+                                    # Quick check to ensure there are actual merit badges to process
+                                    merit_badges_preview = [mb.strip() for mb in merit_badges_raw.split(';') if mb.strip()]
+                                    if merit_badges_preview:
+                                        self._import_merit_badge_counselor_data(cursor, adult_id, merit_badges_raw, first_name, last_name)
                         else:
                             # Row was ignored due to duplicate BSA number
                             skipped_count += 1
@@ -510,6 +528,47 @@ class RosterImporter:
             raise Exception(f"Error importing youth data: {e}")
         finally:
             conn.close()
+    
+    def _import_merit_badge_counselor_data(self, cursor, adult_id: int, merit_badges_raw: str, first_name: str, last_name: str):
+        """
+        Import merit badge counselor qualification data for an adult member.
+        
+        Note: This processes the merit badges that an adult is QUALIFIED to counsel for,
+        not merit badges assigned TO the adult. Adults select/offer these based on their
+        expertise. Scout-to-counselor assignments are handled separately by the Scoutmaster.
+        
+        Args:
+            cursor: Database cursor
+            adult_id: ID of the adult in the adults table
+            merit_badges_raw: Semicolon-separated list of merit badges the adult can counsel for
+            first_name: Adult's first name (for logging)
+            last_name: Adult's last name (for logging)
+        """
+        try:
+            # Parse semicolon-separated merit badges
+            merit_badges = [mb.strip() for mb in merit_badges_raw.split(';') if mb.strip()]
+            
+            mb_count = 0
+            for merit_badge in merit_badges:
+                # Clean up merit badge name
+                merit_badge_clean = merit_badge.strip()
+                if merit_badge_clean:
+                    try:
+                        cursor.execute("""
+                            INSERT OR IGNORE INTO adult_merit_badges (adult_id, merit_badge_name)
+                            VALUES (?, ?)
+                        """, (adult_id, merit_badge_clean))
+                        
+                        if cursor.rowcount > 0:
+                            mb_count += 1
+                    except Exception as e:
+                        print(f"   ⚠️  Warning: Could not insert merit badge '{merit_badge_clean}' for {first_name} {last_name}: {e}")
+            
+            if mb_count > 0:
+                print(f"   🏅 Added {mb_count} merit badge counselor qualifications for {first_name} {last_name}")
+                
+        except Exception as e:
+            print(f"   ⚠️  Warning: Error processing merit badges for {first_name} {last_name}: {e}")
 
 
 def _main_impl(args_list=None):
