@@ -35,7 +35,7 @@ class TestDatabaseSchema:
     def create_database_schema(self, db_path: str) -> bool:
         """Create database schema using the setup script."""
         project_root = Path(__file__).parent.parent
-        setup_script = project_root / "db-scripts" / "setup_database.py"
+        setup_script = project_root / "database" / "setup_database.py"
         
         try:
             result = subprocess.run([
@@ -52,7 +52,7 @@ class TestDatabaseSchema:
     def verify_schema(self, db_path: str) -> bool:
         """Verify database schema using the setup script."""
         project_root = Path(__file__).parent.parent
-        setup_script = project_root / "db-scripts" / "setup_database.py"
+        setup_script = project_root / "database" / "setup_database.py"
         
         try:
             result = subprocess.run([
@@ -320,7 +320,7 @@ class TestFakeDataGeneration:
     def create_database_schema(self, db_path: str) -> bool:
         """Create database schema using the setup script."""
         project_root = Path(__file__).parent.parent
-        setup_script = project_root / "db-scripts" / "setup_database.py"
+        setup_script = project_root / "database" / "setup_database.py"
         
         try:
             result = subprocess.run([

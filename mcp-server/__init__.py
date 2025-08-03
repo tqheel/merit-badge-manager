@@ -1,0 +1,1 @@
+"""MCP server layer - FastAPI server for GitHub integration."""

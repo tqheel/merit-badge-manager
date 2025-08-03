@@ -14,8 +14,6 @@ import csv
 from pathlib import Path
 
 # Add the scripts directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'db-scripts'))
 
 from import_roster import RosterImporter
 from setup_database import create_database_schema

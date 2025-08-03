@@ -87,7 +87,7 @@ def main():
     print("=" * 50)
     
     # Check if we're in the right directory
-    if not Path("mcp_server/main.py").exists():
+    if not Path("mcp-server/main.py").exists():
         print("❌ Please run this script from the project root directory")
         sys.exit(1)
     
@@ -133,8 +133,8 @@ def main():
         # Convert to absolute path before changing directories
         python_executable = os.path.abspath(python_executable)
         
-        # Change to mcp_server directory and start uvicorn
-        os.chdir("mcp_server")
+        # Change to mcp-server directory and start uvicorn
+        os.chdir("mcp-server")
         subprocess.run([
             python_executable, "-m", "uvicorn", 
             "main:app", 

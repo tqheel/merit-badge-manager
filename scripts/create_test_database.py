@@ -27,7 +27,7 @@ def create_test_database_with_fake_data(db_path: str = "test_merit_badge_manager
     
     # First, create the schema using the existing setup script
     project_root = Path(__file__).parent.parent
-    setup_script = project_root / "db-scripts" / "setup_database.py"
+    setup_script = project_root / "database" / "setup_database.py"
     
     print(f"Creating test database with fake data: {db_path}")
     
