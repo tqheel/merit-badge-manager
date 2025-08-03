@@ -123,10 +123,15 @@ def backup_database(db_path: str = "merit_badge_manager.db") -> Optional[str]:
         return None
     
     try:
+        # Ensure backups directory exists
+        backups_dir = Path("backups")
+        backups_dir.mkdir(exist_ok=True)
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_path = f"{db_path}.backup_{timestamp}"
+        backup_filename = f"{Path(db_path).name}.backup_{timestamp}"
+        backup_path = backups_dir / backup_filename
         shutil.copy2(db_path, backup_path)
-        return backup_path
+        return str(backup_path)
     except Exception as e:
         st.error(f"Error creating database backup: {e}")
         return None

@@ -1,0 +1,141 @@
+name: "Database Import Failures After CSV Parsing"
+about: "CSV files are parsed successfully but data is not imported into database tables"
+title: "Database Import Failures After CSV Parsing - Issue #17 Sub-issue"
+labels: ["bug", "user story", "database", "import"]
+assignees: []
+body: |
+  ## Bug Description
+  
+  The CSV import functionality in the Streamlit UI appears to complete successfully and generates parsed CSV files in the `output` directory, but the data is never actually imported into the SQLite database tables. Additionally, there are schema inconsistencies with table naming.
+  
+  ## Steps to Reproduce
+  
+  1. Place roster CSV file in `data/` directory
+  2. Run Streamlit UI: `streamlit run streamlit_app.py`
+  3. Navigate to "CSV Import" page
+  4. Click "Import Data" button
+  5. Import appears successful with green checkmark
+  6. Check database: `sqlite3 merit_badge_manager.db "SELECT COUNT(*) FROM adults;"`
+  7. Result: 0 records (should have actual count)
+  8. Check for youth data: `sqlite3 merit_badge_manager.db "SELECT COUNT(*) FROM youth;"`
+  9. Result: "no such table: youth" error
+  
+  ## Expected Behavior
+  
+  - After successful import, database tables should contain the parsed data
+  - Table naming should be consistent throughout the codebase
+  - Record counts should match between CSV files and database tables
+  
+  ## Actual Behavior
+  
+  - CSV files are created in `output/` directory with correct data
+  - Database tables remain empty (adult count = 0)
+  - Schema inconsistency: code references `youth` table but database has `scouts` table
+  - No error messages reported during import process
+  
+  ## Primary Issues Identified
+  
+  ### 1. Missing Database Import Logic in RosterImporter Class
+  **Location**: `scripts/import_roster.py`
+  **Problem**: The `RosterImporter.run_import()` method only parses CSV files to the `output` directory but never actually inserts the data into the SQLite database.
+  
+  **Evidence**: 
+  - CSV files exist in `output` directory after "import"
+  - Database tables remain empty (adult count = 0)
+  - No database insertion code present in the import workflow
+  
+  **Required Fix**: Add database insertion logic to read the parsed CSV files and insert data into the appropriate database tables.
+  
+  ### 2. Table Schema Inconsistency - Youth vs Scouts
+  **Location**: Multiple files referencing database tables
+  **Problem**: The codebase has inconsistent references between `youth` table (expected by some code) and `scouts` table (actual database schema).
+  
+  **Evidence**:
+  - Command `SELECT COUNT(*) FROM youth` fails with "no such table: youth"
+  - Database actually contains `scouts` table
+  - Code references both table names inconsistently
+  
+  **Required Fix**: Standardize all references to use `scouts` table consistently across the codebase.
+  
+  ### 3. Database Connection Issues in Import Process
+  **Location**: `scripts/import_roster.py`
+  **Problem**: The import process may not be properly establishing database connections or committing transactions during the import operation.
+  
+  **Evidence**:
+  - Database exists but remains empty after import
+  - No error messages during import process
+  - Import appears to complete successfully but no data persists
+  
+  **Required Fix**: Ensure proper database connection management, transaction handling, and data persistence.
+  
+  ## Secondary Issues
+  
+  ### 4. Lack of Error Reporting in Database Operations
+  **Problem**: Silent failures in database operations - the import process doesn't report when database insertion fails.
+  
+  **Required Fix**: Add comprehensive error handling and logging for database operations.
+  
+  ### 5. Missing Data Validation Between CSV and Database
+  **Problem**: No verification that parsed CSV data structure matches expected database schema before insertion.
+  
+  **Required Fix**: Add schema validation between parsed CSV columns and database table structure.
+  
+  ## Specific Code Areas Requiring Changes
+  
+  1. **`scripts/import_roster.py`**:
+     - Add `_import_adult_data()` method
+     - Add `_import_youth_data()` method (targeting `scouts` table)
+     - Update `run_import()` to call database insertion methods
+     - Add proper error handling and transaction management
+  
+  2. **Database schema references**:
+     - Update any remaining `youth` table references to `scouts`
+     - Ensure Streamlit UI uses correct table names
+     - Verify all database views use consistent table naming
+  
+  3. **`streamlit_app.py`**:
+     - Verify database connection logic
+     - Ensure error reporting for failed imports
+     - Update any hardcoded table name references
+  
+  ## Testing Requirements
+  
+  1. **Verify data import flow**:
+     - Test that parsed CSV data actually inserts into database
+     - Verify record counts match between CSV files and database tables
+     - Test rollback on import failures
+  
+  2. **Schema consistency tests**:
+     - Ensure all code references use `scouts` table consistently
+     - Verify database views work with actual table structure
+  
+  3. **Error handling tests**:
+     - Test import failure scenarios
+     - Verify error messages are properly displayed to users
+  
+  ## Success Criteria
+  
+  - After running import through UI, database tables contain data matching CSV file record counts
+  - Command `SELECT COUNT(*) FROM adults` returns actual adult count
+  - Command `SELECT COUNT(*) FROM scouts` returns actual scout count  
+  - All table name references are consistent throughout codebase
+  - Import errors are properly reported to users
+  
+  ## Environment
+  
+  - Python: 3.12
+  - SQLite database: `merit_badge_manager.db`
+  - Import method: Streamlit UI CSV Import page
+  - Branch: copilot/fix-16
+  
+  ## Related Files
+  
+  - `scripts/import_roster.py` - Contains broken import logic
+  - `streamlit_app.py` - UI that calls the import
+  - `db-scripts/setup_database.py` - Database schema creation
+  - `output/adult_roster.csv` - Generated but not imported
+  - `output/scout_roster.csv` - Generated but not imported
+  
+  ## Priority
+  
+  High - This breaks the core functionality of the application (data import)

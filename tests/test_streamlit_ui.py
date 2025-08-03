@@ -119,6 +119,9 @@ def test_backup_and_restore_functions():
         assert backup_path is not None, "backup_database should return a backup path"
         assert Path(backup_path).exists(), "Backup file should exist"
         
+        # Verify backup is in the backups directory
+        assert Path(backup_path).parent.name == "backups", "Backup should be in backups directory"
+        
         # Modify the original database
         conn = sqlite3.connect(temp_db_path)
         conn.execute("DELETE FROM test_table WHERE id = 1")
@@ -146,6 +149,11 @@ def test_backup_and_restore_functions():
         for path in [temp_db_path, backup_path]:
             if path and Path(path).exists():
                 Path(path).unlink()
+        
+        # Clean up backups directory if it's empty
+        backups_dir = Path("backups")
+        if backups_dir.exists() and not any(backups_dir.iterdir()):
+            backups_dir.rmdir()
 
 def test_validation_display_function():
     """Test the validation results display function."""

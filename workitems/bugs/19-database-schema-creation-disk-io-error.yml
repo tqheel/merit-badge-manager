@@ -1,0 +1,121 @@
+name: "Database Schema Creation Disk I/O Error"
+about: "Disk I/O error encountered during database schema creation after CSV validation"
+title: "Database Schema Creation Disk I/O Error - Issue #17 Sub-issue"
+labels: ["bug", "database", "import", "critical"]
+assignees: []
+body: |
+  ## Bug Description
+
+  During the CSV import process in the Streamlit UI, the application encounters a "disk I/O error" while attempting to recreate the SQLite database schema. This prevents the database schema from being created and halts the import process, leaving the database empty.
+
+  ## Steps to Reproduce
+
+  1. Place roster CSV file in the `data/` directory.
+  2. Run Streamlit UI: `streamlit run streamlit_app.py`.
+  3. Navigate to "CSV Import" page.
+  4. Click "Import Data" button.
+  5. Observe the console output for errors during database schema creation.
+
+  ## Expected Behavior
+
+  - The database schema should be created successfully without errors.
+  - Data from the validated CSV files should be imported into the database tables.
+  - The database should contain the expected tables and records.
+
+  ## Actual Behavior
+
+  - The database schema creation fails with a "disk I/O error."
+  - No tables are created in the database.
+  - The database remains empty after the import process.
+
+  ## Primary Issues Identified
+
+  ### 1. Disk I/O Error During Database Schema Creation
+  **Location**: `db-scripts/setup_database.py`
+  **Problem**: The application encounters a "disk I/O error" while recreating the SQLite database schema.
+
+  **Evidence**:
+  - Console output shows: `❌ Database error: disk I/O error`.
+  - Database file (`merit_badge_manager.db`) is removed but not recreated.
+
+  **Required Fix**:
+  - Investigate the cause of the disk I/O error (e.g., file permissions, disk space, SQLite configuration).
+  - Ensure proper error handling and recovery during database schema creation.
+
+  ### 2. Missing Data Import Logic After Validation
+  **Location**: `scripts/import_roster.py`
+  **Problem**: Even if the database schema creation succeeds, the application does not insert validated data into the database tables.
+
+  **Evidence**:
+  - Console output shows successful CSV validation but no data import.
+  - Database tables remain empty after the import process.
+
+  **Required Fix**:
+  - Add logic to insert validated data into the database tables after schema creation.
+
+  ## Secondary Issues
+
+  ### 3. Lack of Error Reporting in Database Operations
+  **Problem**: The application does not provide detailed error messages or logs for database failures.
+
+  **Required Fix**:
+  - Add comprehensive error reporting and logging for database operations.
+
+  ### 4. Missing Unit Tests for Database Creation and Import
+  **Problem**: No unit tests exist to verify database schema creation and data import functionality.
+
+  **Required Fix**:
+  - Add unit tests to cover database creation, data import, and error handling scenarios.
+
+  ## Specific Code Areas Requiring Changes
+
+  1. **`db-scripts/setup_database.py`**:
+     - Investigate and fix the disk I/O error during schema creation.
+     - Add error handling and recovery logic.
+
+  2. **`scripts/import_roster.py`**:
+     - Add logic to insert validated data into the database tables.
+     - Ensure proper transaction management during data import.
+
+  3. **`streamlit_app.py`**:
+     - Update error reporting for database failures.
+     - Ensure the UI reflects the status of the import process.
+
+  ## Testing Requirements
+
+  1. **Verify database schema creation**:
+     - Test schema creation under various conditions (e.g., file permissions, disk space).
+     - Ensure schema creation succeeds without errors.
+
+  2. **Verify data import flow**:
+     - Test that validated CSV data is inserted into the database tables.
+     - Verify record counts match between CSV files and database tables.
+
+  3. **Error handling tests**:
+     - Test recovery from database errors (e.g., disk I/O error).
+     - Verify error messages are properly displayed to users.
+
+  ## Success Criteria
+
+  - Database schema is created successfully without errors.
+  - Validated CSV data is imported into the database tables.
+  - Command `SELECT COUNT(*) FROM adults` returns actual adult count.
+  - Command `SELECT COUNT(*) FROM scouts` returns actual scout count.
+  - Import errors are properly reported to users.
+
+  ## Environment
+
+  - Python: 3.12
+  - SQLite database: `merit_badge_manager.db`
+  - Import method: Streamlit UI CSV Import page
+  - Branch: copilot/fix-16
+
+  ## Related Files
+
+  - `scripts/import_roster.py` - Contains broken import logic.
+  - `streamlit_app.py` - UI that calls the import.
+  - `db-scripts/setup_database.py` - Database schema creation.
+
+  ## Priority
+
+  Critical - This prevents the core functionality of the application (data import).

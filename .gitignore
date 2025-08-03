@@ -155,3 +155,6 @@ package-lock.json
 yarn.lock
 Pipfile.lock
 poetry.lock
+
+# Backup files
+backups/
