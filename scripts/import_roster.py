@@ -387,13 +387,19 @@ class RosterImporter:
                                 adult_id = adult_id_result[0]
                                 
                                 # Process merit badge counselor qualification data
-                                merit_badges_raw = (row.get('Merit Badge Counselor For', '') or 
+                                merit_badges_raw = (row.get('Merit Badges', '') or 
+                                                  row.get('Merit Badge Counselor For', '') or 
                                                   row.get('merit_badge_counselor_for', '') or 
                                                   row.get('Merit_Badge_Counselor_For', ''))
                                 
                                 if merit_badges_raw and merit_badges_raw.strip():
                                     # Quick check to ensure there are actual merit badges to process
-                                    merit_badges_preview = [mb.strip() for mb in merit_badges_raw.split(';') if mb.strip()]
+                                    # Detect separator (pipe | or semicolon ;)
+                                    if '|' in merit_badges_raw:
+                                        merit_badges_preview = [mb.strip() for mb in merit_badges_raw.split('|') if mb.strip()]
+                                    else:
+                                        merit_badges_preview = [mb.strip() for mb in merit_badges_raw.split(';') if mb.strip()]
+                                    
                                     if merit_badges_preview:
                                         self._import_merit_badge_counselor_data(cursor, adult_id, merit_badges_raw, first_name, last_name)
                         else:
@@ -540,13 +546,16 @@ class RosterImporter:
         Args:
             cursor: Database cursor
             adult_id: ID of the adult in the adults table
-            merit_badges_raw: Semicolon-separated list of merit badges the adult can counsel for
+            merit_badges_raw: Semicolon-separated or pipe-separated list of merit badges the adult can counsel for
             first_name: Adult's first name (for logging)
             last_name: Adult's last name (for logging)
         """
         try:
-            # Parse semicolon-separated merit badges
-            merit_badges = [mb.strip() for mb in merit_badges_raw.split(';') if mb.strip()]
+            # Parse merit badges - detect separator (pipe | or semicolon ;)
+            if '|' in merit_badges_raw:
+                merit_badges = [mb.strip() for mb in merit_badges_raw.split('|') if mb.strip()]
+            else:
+                merit_badges = [mb.strip() for mb in merit_badges_raw.split(';') if mb.strip()]
             
             mb_count = 0
             for merit_badge in merit_badges:
