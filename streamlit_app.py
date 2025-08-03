@@ -644,7 +644,7 @@ elif page == "Database Views":
         st.stop()
     
     # Group views by type
-    adult_views = [v for v in views if 'adult' in v or v in ['training_expiration_summary', 'merit_badge_counselors', 'current_positions']]
+    adult_views = [v for v in views if 'adult' in v or v in ['training_expiration_summary', 'merit_badge_counselors', 'current_positions', 'registered_volunteers']]
     youth_views = [v for v in views if 'scout' in v or v in ['advancement_progress_by_rank', 'primary_parent_contacts', 'patrol_assignments']]
     other_views = [v for v in views if v not in adult_views and v not in youth_views]
     
@@ -672,6 +672,7 @@ elif page == "Database Views":
             'training_expiration_summary': 'Training status and expiration dates',
             'merit_badge_counselors': 'Merit badge counselor assignments',
             'current_positions': 'Current adult positions',
+            'registered_volunteers': 'All adults with BSA numbers (registered volunteers) and their active roles',
             'scouts_missing_data': 'Scouts with missing required information',
             'active_scouts_with_positions': 'Active scouts and their positions',
             'merit_badge_progress_summary': 'Merit badge progress overview',

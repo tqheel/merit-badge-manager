@@ -372,10 +372,35 @@ The database includes comprehensive schemas for both adult and youth roster mana
 - **Shared Validation Patterns**: Consistent data quality across adult and youth systems
 
 **Performance Features:**
-- **36 optimized indexes** for common query patterns across both systems
-- **12 validation views** for data quality checks and operational reporting
+- **36 optimized indexes** for common query patterns across both systems  
+- **13 validation views** for data quality checks and operational reporting
 - Foreign key constraints with cascade delete for data integrity
 - Automatic timestamp triggers for audit trails
+
+### Database Views
+
+The database includes several validation and reporting views for operational insights and data quality checks:
+
+**Adults Missing Data View** (`adults_missing_data`)
+- Identifies adults with missing required information
+- Helps ensure data completeness for roster management
+
+**Training Expiration Summary View** (`training_expiration_summary`)  
+- Shows training status (current, expired, expiring soon)
+- Critical for compliance tracking and certification management
+
+**Merit Badge Counselors View** (`merit_badge_counselors`)
+- Lists counselors available for each merit badge
+- Enables efficient Scout-to-counselor assignment workflows
+
+**Current Positions View** (`current_positions`)
+- Shows current position assignments and tenure information  
+- Provides leadership structure overview
+
+**Registered Volunteers View** (`registered_volunteers`)
+- Shows all adults with BSA numbers (registered volunteers) and their active roles
+- Comprehensive view of all registered adults, including those without current positions
+- Enables quick identification of volunteer capacity and leadership gaps
 
 ### Validating Database Content
 
@@ -389,6 +414,11 @@ sqlite3 merit_badge_test_database.db
 sqlite> SELECT COUNT(*) as adult_count FROM adults;
 sqlite> SELECT * FROM current_positions;
 sqlite> SELECT merit_badge_name, counselor_count FROM merit_badge_counselors LIMIT 5;
+sqlite> SELECT * FROM registered_volunteers WHERE position_status = 'No Current Position';
+sqlite> SELECT COUNT(*) as total_registered, 
+       COUNT(CASE WHEN position_status = 'Has Position' THEN 1 END) as with_positions,
+       COUNT(CASE WHEN position_status = 'No Current Position' THEN 1 END) as without_positions
+       FROM registered_volunteers;
 
 # Sample validation commands for youth data:
 sqlite> SELECT COUNT(*) as scout_count FROM scouts;

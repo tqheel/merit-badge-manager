@@ -121,6 +121,7 @@ DROP VIEW IF EXISTS adults_missing_data;
 DROP VIEW IF EXISTS training_expiration_summary;
 DROP VIEW IF EXISTS merit_badge_counselors;
 DROP VIEW IF EXISTS current_positions;
+DROP VIEW IF EXISTS registered_volunteers;
 
 -- View to identify adults with missing required information
 CREATE VIEW adults_missing_data AS
@@ -185,6 +186,31 @@ FROM adults a
 JOIN adult_positions p ON a.id = p.adult_id
 WHERE p.is_current = 1
 ORDER BY a.last_name, a.first_name;
+
+-- View to show all registered volunteers (adults with BSA numbers) and their active roles
+-- This includes adults even if they don't have current positions
+CREATE VIEW registered_volunteers AS
+SELECT 
+    a.first_name,
+    a.last_name,
+    a.bsa_number,
+    a.email,
+    a.city,
+    a.state,
+    a.date_joined,
+    a.unit_number,
+    p.position_title,
+    p.tenure_info,
+    p.start_date,
+    p.end_date,
+    CASE 
+        WHEN p.position_title IS NOT NULL THEN 'Has Position'
+        ELSE 'No Current Position'
+    END AS position_status
+FROM adults a
+LEFT JOIN adult_positions p ON a.id = p.adult_id AND p.is_current = 1
+WHERE a.bsa_number IS NOT NULL
+ORDER BY a.last_name, a.first_name, p.position_title;
 
 -- =============================================================================
 -- SAMPLE DATA VALIDATION QUERIES (commented for reference)
