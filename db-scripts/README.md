@@ -103,6 +103,7 @@ Options:
 - **training_expiration_summary** - Shows training status (current, expired, expiring soon)
 - **merit_badge_counselors** - Lists counselors available for each merit badge
 - **current_positions** - Shows current position assignments
+- **registered_volunteers** - Shows all adults with BSA numbers (registered volunteers) and their active roles
 
 ### Performance Features
 

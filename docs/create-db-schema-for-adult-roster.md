@@ -158,6 +158,32 @@ CREATE INDEX idx_adult_positions_current ON adult_positions(is_current);
 - OA Info includes status: "OA - Active", "OA - Inactive", or empty
 - Swim Class values: "Swimmer", "Nonswimmer", or empty
 
+## Database Views
+
+The schema includes several views for data validation and reporting:
+
+### adults_missing_data
+Identifies adults with missing required information to ensure data completeness.
+
+### training_expiration_summary
+Shows training status (current, expired, expiring soon) for compliance tracking.
+
+### merit_badge_counselors  
+Lists counselors available for each merit badge to enable efficient Scout assignments.
+
+### current_positions
+Shows current position assignments and tenure information for leadership structure overview.
+
+### registered_volunteers
+Shows all adults with BSA numbers (registered volunteers) and their active roles. This comprehensive view includes adults even if they don't have current positions, enabling quick identification of volunteer capacity and leadership gaps.
+
+**Key Features:**
+- **Comprehensive Coverage**: Shows ALL adults with BSA numbers (registered volunteers)
+- **Active Roles Only**: Displays only current positions (where `is_current = 1`)
+- **Multiple Positions**: Handles adults with multiple leadership roles by showing separate rows
+- **Clear Status**: Distinguishes between adults with positions ("Has Position") and without ("No Current Position")
+- **Proper Ordering**: Results ordered by last name, first name, and position title
+
 ## Normalized Data Benefits
 
 1. **Training Management**: Separate table allows for easier reporting on training completions and expirations
