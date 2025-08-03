@@ -7,7 +7,8 @@ import tempfile
 import csv
 import shutil
 from pathlib import Path
-from src.roster_parser import RosterParser
+# Import parser functionality (now available via conftest.py)
+from roster_parser import RosterParser
 
 
 class TestRosterParser:

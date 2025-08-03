@@ -22,10 +22,10 @@ import logging
 import shutil
 from datetime import datetime
 
-# Add the src and scripts directories to the Python path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-sys.path.insert(0, str(Path(__file__).parent / "scripts"))
-sys.path.insert(0, str(Path(__file__).parent / "db-scripts"))
+# Add the new layer directories to the Python path
+sys.path.insert(0, str(Path(__file__).parent.parent / "database-access"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "database"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from csv_validator import CSVValidator, ValidationResult, print_validation_summary
 from roster_parser import RosterParser

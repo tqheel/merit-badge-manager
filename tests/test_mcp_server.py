@@ -19,12 +19,16 @@ def test_imports():
     print("✅ Basic Python modules imported successfully")
     
     # Test if we can load the server module structure
-    from mcp_server import main
+    sys.path.insert(0, str(Path(__file__).parent.parent / "mcp-server"))
+    import main
     print("✅ MCP server module structure is valid")
 
 def test_close_issue_request_model():
     """Test that the CloseIssueRequest model is properly defined."""
-    from mcp_server.main import CloseIssueRequest
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent / "mcp-server"))
+    from main import CloseIssueRequest
     
     # Test valid request with required fields
     request1 = CloseIssueRequest(issue_number=123)
@@ -45,7 +49,7 @@ def test_directory_structure():
     required_dirs = [
         "workitems/features",
         "workitems/published/features",
-        "mcp_server",
+        "mcp-server",
         "venv"  # Updated to check for venv instead of .venv
     ]
     

@@ -24,7 +24,7 @@ class TestRegisteredVolunteersView:
         db_path = tmp_path / "test_registered_volunteers.db"
         
         # Get the schema file path
-        schema_path = Path(__file__).parent.parent / "db-scripts" / "create_adult_roster_schema.sql"
+        schema_path = Path(__file__).parent.parent / "database" / "create_adult_roster_schema.sql"
         
         # Create database and apply schema
         conn = sqlite3.connect(db_path)

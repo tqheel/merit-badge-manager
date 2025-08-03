@@ -12,11 +12,7 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-# Add the scripts directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-# Import after setting path
+# Import roster import functionality (now available via conftest.py)
 from import_roster import RosterImporter
 
 

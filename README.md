@@ -68,7 +68,31 @@ cp .env.template .env
 # Required scopes: repo (for creating issues)
 ```
 
-### 3. Start the MCP Server
+### 3. Start the Web UI (Recommended)
+
+The Merit Badge Manager now features a comprehensive web interface for all operations:
+
+```bash
+# Make sure virtual environment is activated first!
+source venv/bin/activate  # On macOS/Linux
+# venv\Scripts\activate   # On Windows
+
+# Start the Streamlit web application
+streamlit run web-ui/main.py
+```
+
+The web interface provides:
+- Environment configuration management
+- CSV data import and validation
+- Database setup and management
+- Data viewing and reporting
+- All functionality through a user-friendly interface
+
+**Web Interface URL:** http://localhost:8501
+
+### 4. Alternative: Start the MCP Server
+
+For GitHub integration and API access:
 
 ```bash
 # Easy way (handles virtual environment automatically)
@@ -76,7 +100,7 @@ python start_server.py
 
 # Manual way (make sure venv is activated first)
 source venv/bin/activate  # On macOS/Linux
-cd mcp_server
+cd mcp-server
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -85,6 +109,14 @@ The server will be available at:
 - Documentation: http://127.0.0.1:8000/docs
 
 ## Features
+
+### Web Interface (Primary)
+- **Complete Web UI**: Streamlit-based interface for all operations
+- **Environment Management**: Configure settings through web interface
+- **CSV Import & Validation**: Upload and validate data files with real-time feedback
+- **Database Operations**: Create, backup, and restore databases via UI
+- **Data Visualization**: View and export database reports and analytics
+- **No Command Line Required**: All functionality accessible through web browser
 
 ### Core Functionality
 - **CSV Data Import**: Process Merit Badge In-Progress Reports and Troop Roster Files
@@ -114,36 +146,45 @@ The server will be available at:
 
 ## Project Structure
 
+The project is organized into four distinct layers for clear separation of concerns:
+
 ```
 merit-badge-manager/
-├── data/                          # Data files (CSV imports)
-├── db-scripts/                    # Database setup and schema scripts
+├── data/                           # Data files (CSV imports)
+├── database/                       # Database layer - SQL schemas and setup scripts
 │   ├── create_adult_roster_schema.sql  # Adult database schema
 │   ├── youth_database_schema.sql       # Youth database schema
-│   └── setup_database.py         # Automated database creation
-├── docs/                          # Documentation
-│   └── youth-database-schema.md   # Youth roster schema documentation
-├── logs/                          # Application logs
-├── mcp_server/                    # MCP server implementation
-│   └── main.py                    # FastAPI server with GitHub integration
-├── scripts/                       # Utility scripts
-│   ├── create_test_database.py   # Test database with fake data generator
-│   └── publish_features.py       # Feature publishing script
-├── tests/                         # Test files
-│   ├── test_database_schema.py   # Adult database schema and functionality tests
+│   ├── setup_database.py          # Automated database creation
+│   └── README.md                   # Database documentation
+├── database-access/                # Database access layer - Data processing and imports
+│   ├── csv_validator.py           # CSV validation logic
+│   ├── roster_parser.py           # CSV parsing functionality
+│   └── import_roster.py           # Data import and processing
+├── web-ui/                         # Web UI layer - Streamlit application
+│   └── main.py                     # Main Streamlit web interface
+├── mcp-server/                     # MCP server layer - FastAPI server with GitHub integration
+│   └── main.py                     # FastAPI server implementation
+├── docs/                           # Documentation
+│   └── youth-database-schema.md    # Youth roster schema documentation
+├── logs/                           # Application logs
+├── scripts/                        # Utility scripts
+│   ├── create_test_database.py    # Test database with fake data generator
+│   └── publish_features.py        # Feature publishing script
+├── tests/                          # Test files
+│   ├── test_database_schema.py    # Adult database schema and functionality tests
 │   ├── test_youth_database_schema.py   # Youth database schema and integration tests
-│   ├── test_mcp_server.py        # MCP server tests
-│   └── test_roster_parser.py     # Roster parsing tests
-├── workitems/                     # Work item management
-│   ├── features/                  # Unpublished feature requests
-│   └── published/                 # Published feature requests
+│   ├── test_mcp_server.py         # MCP server tests
+│   └── test_*.py                  # Additional test files
+├── workitems/                      # Work item management
+│   ├── features/                   # Unpublished feature requests
+│   └── published/                  # Published feature requests
 │       └── features/
-├── requirements.txt               # Python dependencies
-├── spec.md                       # Project specification
-├── .env.template                 # Environment variables template
-├── setup.sh                     # Setup script (macOS/Linux)
-├── setup.bat                    # Setup script (Windows)
-└── start_server.py              # Server startup script
+├── requirements.txt                # Python dependencies
+├── spec.md                        # Project specification
+├── .env.template                  # Environment variables template
+├── setup.sh                      # Setup script (macOS/Linux)
+├── setup.bat                     # Setup script (Windows)
+└── start_server.py               # Server startup script
 ```
 
 ## Virtual Environment Management
@@ -278,6 +319,28 @@ python scripts/publish_features.py
 
 ## Database Management
 
+### Web Interface Approach (Recommended)
+
+The primary way to manage the database is through the Streamlit web interface:
+
+```bash
+# Start the web interface
+source venv/bin/activate
+streamlit run web-ui/main.py
+```
+
+The web interface provides:
+- **Database Creation**: Create production databases with both adult and youth schemas
+- **Data Import**: Upload and import CSV files with validation
+- **Backup & Restore**: Database backup and restoration functionality  
+- **Schema Verification**: Automatic schema validation and integrity checks
+- **Test Data**: Generate test databases with realistic fake data
+- **Configuration Management**: Manage .env settings through the UI
+
+### Command Line Approach (Advanced Users)
+
+For advanced users and automation, command line tools are still available:
+
 ### Creating the Production Database
 
 The application uses SQLite for data storage with comprehensive schemas for both adult and youth roster management.
@@ -287,16 +350,16 @@ The application uses SQLite for data storage with comprehensive schemas for both
 source venv/bin/activate
 
 # Create production database with both adult and youth schemas (default)
-python db-scripts/setup_database.py
+python database/setup_database.py
 
 # Create database with custom name and verify schema
-python db-scripts/setup_database.py -d my_database.db --verify
+python database/setup_database.py -d my_database.db --verify
 
 # Create adult-only database (legacy mode)
-python db-scripts/setup_database.py --adults-only
+python database/setup_database.py --adults-only
 
 # Force recreation of existing database
-python db-scripts/setup_database.py --force
+python database/setup_database.py --force
 ```
 
 ### Creating a Test Database with Fake Data
@@ -439,8 +502,8 @@ sqlite> .quit
 
 - **Production Database**: `merit_badge_manager.db` (main application database with both adult and youth schemas)
 - **Test Database**: `test_merit_badge_manager.db` (created by test script with sample data)
-- **Adult Schema File**: `db-scripts/create_adult_roster_schema.sql` (adult database schema)
-- **Youth Schema File**: `db-scripts/youth_database_schema.sql` (youth database schema)
-- **Setup Script**: `db-scripts/setup_database.py` (automated database creation)
+- **Adult Schema File**: `database/create_adult_roster_schema.sql` (adult database schema)
+- **Youth Schema File**: `database/youth_database_schema.sql` (youth database schema)
+- **Setup Script**: `database/setup_database.py` (automated database creation)
 
-See `db-scripts/README.md` and `docs/youth-database-schema.md` for detailed database documentation.
+See `database/README.md` and `docs/youth-database-schema.md` for detailed database documentation.

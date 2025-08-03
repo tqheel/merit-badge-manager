@@ -30,7 +30,7 @@ class TestYouthDatabaseSchema(unittest.TestCase):
         
         # Create schema using setup script
         project_root = Path(__file__).parent.parent
-        setup_script = project_root / "db-scripts" / "setup_database.py"
+        setup_script = project_root / "database" / "setup_database.py"
         
         import subprocess
         import sys

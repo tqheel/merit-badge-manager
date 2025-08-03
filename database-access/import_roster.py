@@ -15,11 +15,8 @@ from pathlib import Path
 from typing import Dict, Optional
 from dotenv import load_dotenv
 
-# Add the src directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-# Add the db-scripts directory to the Python path for database functions
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'db-scripts'))
+# Add the database directory to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'database'))
 
 from csv_validator import CSVValidator, ValidationResult, print_validation_summary
 from roster_parser import RosterParser
