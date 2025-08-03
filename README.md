@@ -170,11 +170,20 @@ merit-badge-manager/
 ├── scripts/                        # Utility scripts
 │   ├── create_test_database.py    # Test database with fake data generator
 │   └── publish_features.py        # Feature publishing script
-├── tests/                          # Test files
+├── tests/                          # Unit and integration tests
 │   ├── test_database_schema.py    # Adult database schema and functionality tests
 │   ├── test_youth_database_schema.py   # Youth database schema and integration tests
 │   ├── test_mcp_server.py         # MCP server tests
 │   └── test_*.py                  # Additional test files
+├── ui-tests/                       # UI tests with Playwright
+│   ├── test_basic_ui.py           # Basic UI and navigation tests
+│   ├── test_csv_import.py         # CSV import functionality tests
+│   ├── test_database_management.py # Database management tests
+│   ├── test_database_views.py     # Database views tests
+│   ├── test_environment_config.py # Environment configuration tests
+│   ├── test_integration_workflows.py # End-to-end workflow tests
+│   ├── conftest.py                # Pytest fixtures for UI testing
+│   └── README.md                  # UI testing documentation
 ├── workitems/                      # Work item management
 │   ├── features/                   # Unpublished feature requests
 │   └── published/                  # Published feature requests
@@ -184,7 +193,9 @@ merit-badge-manager/
 ├── .env.template                  # Environment variables template
 ├── setup.sh                      # Setup script (macOS/Linux)
 ├── setup.bat                     # Setup script (Windows)
-└── start_server.py               # Server startup script
+├── start_server.py               # Server startup script
+├── run_ui_tests.py               # UI test runner script
+└── playwright.config.py          # Playwright configuration
 ```
 
 ## Virtual Environment Management
@@ -410,6 +421,71 @@ python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::t
 python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_scout_counselor_integration -v
 python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_validation_views -v
 ```
+
+### UI Testing with Playwright
+
+The project includes comprehensive UI tests for the Streamlit web interface using Playwright:
+
+```bash
+# Make sure virtual environment is activated first!
+source venv/bin/activate
+
+# Install Playwright browsers (one-time setup)
+playwright install
+
+# Run all UI tests using the test runner
+python run_ui_tests.py
+
+# Run specific UI test suites
+python run_ui_tests.py --suite basic      # Basic UI and navigation tests
+python run_ui_tests.py --suite csv        # CSV import functionality tests
+python run_ui_tests.py --suite database   # Database management tests
+python run_ui_tests.py --suite views      # Database views tests
+python run_ui_tests.py --suite config     # Environment configuration tests
+python run_ui_tests.py --suite integration # End-to-end workflow tests
+
+# Run with different browsers
+python run_ui_tests.py --browser firefox
+python run_ui_tests.py --browser webkit
+
+# Run in headed mode (show browser window)
+python run_ui_tests.py --headed
+
+# Include slow tests for comprehensive coverage
+python run_ui_tests.py --slow
+
+# Run UI tests directly with pytest
+pytest ui-tests/ -v                       # All UI tests
+pytest ui-tests/test_basic_ui.py -v       # Basic UI tests only
+pytest -m ui -v                          # All tests marked as UI tests
+pytest -m "ui and not slow" -v           # UI tests excluding slow ones
+```
+
+#### UI Test Coverage
+
+The UI test suite validates:
+- **Page Loading & Navigation**: All main application pages and sidebar navigation
+- **CSV Import & Validation**: File upload, validation feedback, and import workflows
+- **Database Management**: Database creation, backup, restore, and reset operations
+- **Database Views**: Data display, view selection, and filtering functionality
+- **Environment Configuration**: Settings management and form validation
+- **Error Handling**: Error messages and recovery scenarios
+- **Responsive Design**: Multiple screen sizes and accessibility features
+- **Integration Workflows**: Complete user journeys from setup to data analysis
+
+#### CI/CD Integration
+
+UI tests are designed for automated testing in CI environments:
+
+```bash
+# Run UI tests in CI mode (headless, fast)
+python run_ui_tests.py --suite basic --browser chromium
+
+# Validate UI test setup without running browser-dependent tests
+pytest ui-tests/test_ui_setup_validation.py -v
+```
+
+See `ui-tests/README.md` for detailed UI testing documentation.
 
 ### Database Schema Overview
 

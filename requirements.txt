@@ -6,4 +6,6 @@ aiohttp
 aiofiles
 python-dotenv
 pytest
+pytest-playwright
+playwright
 streamlit
