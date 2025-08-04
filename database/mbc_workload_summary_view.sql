@@ -4,6 +4,7 @@ CREATE VIEW IF NOT EXISTS mbc_workload_summary AS
 SELECT 
     -- MBC Information
     a.first_name || ' ' || a.last_name as mbc_name,
+    a.id as mbc_adult_id,
     a.first_name,
     a.last_name,
     a.email,
