@@ -11,6 +11,20 @@ Complete SQL script that creates the adult roster database schema including:
 - **Views**: Data validation and reporting views
 - **Triggers**: Automatic timestamp updates
 
+### `youth_database_schema.sql`
+Complete SQL script that creates the youth roster database schema including:
+- **Tables**: scouts, scout_training, scout_positions, parent_guardians, scout_merit_badge_progress, scout_advancement_history
+- **Indexes**: Performance optimized indexes for youth-specific queries
+- **Views**: Youth data validation and reporting views
+- **Integration**: Foreign key relationships with adult roster for Scout-to-counselor assignments
+
+### `merit_badge_progress_schema.sql`
+Complete SQL script that creates the Merit Badge In-Progress Report import schema including:
+- **Tables**: merit_badge_progress, unmatched_mbc_names, mbc_name_mappings, merit_badge_requirements
+- **Views**: 6 specialized views for merit badge management and data quality validation
+- **Integration**: Links imported Scoutbook data with both adult and youth rosters via BSA numbers
+- **Advanced Features**: Fuzzy MBC name matching, requirement choice group handling, comprehensive import statistics
+
 ### `setup_database.py`
 Python script that executes the SQL schema and provides database setup utilities.
 
