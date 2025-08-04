@@ -438,6 +438,38 @@ def display_mbc_modal(mbc_name: str, mbc_adult_id: int):
             st.session_state.selected_mbc = None
             st.rerun()
 
+def refresh_mbc_workload_view():
+    """Refresh the mbc_workload_summary view to ensure it has the latest structure."""
+    conn = get_database_connection()
+    if not conn:
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Drop the existing view
+        cursor.execute("DROP VIEW IF EXISTS mbc_workload_summary")
+        
+        # Read the updated view definition from the SQL file
+        view_sql_path = Path(__file__).parent.parent / "database" / "mbc_workload_summary_view.sql"
+        if view_sql_path.exists():
+            with open(view_sql_path, 'r') as f:
+                view_sql = f.read()
+            
+            # Execute the new view creation
+            cursor.execute(view_sql)
+            conn.commit()
+            return True
+        else:
+            st.error("View SQL file not found")
+            return False
+            
+    except Exception as e:
+        st.error(f"Error refreshing view: {e}")
+        return False
+    finally:
+        conn.close()
+
 def display_view_data(view_name: str):
     """Display data from a database view."""
     conn = get_database_connection()
@@ -446,6 +478,21 @@ def display_view_data(view_name: str):
         return
     
     try:
+        # Special handling for MBC Workload Summary - refresh view if needed
+        if view_name == 'mbc_workload_summary':
+            # Try to query for mbc_adult_id column to see if view is updated
+            try:
+                pd.read_sql_query("SELECT mbc_adult_id FROM mbc_workload_summary LIMIT 1", conn)
+            except Exception:
+                # Column doesn't exist, refresh the view
+                conn.close()
+                if refresh_mbc_workload_view():
+                    st.success("Updated MBC Workload Summary view structure")
+                    conn = get_database_connection()
+                else:
+                    st.error("Failed to update view structure")
+                    return
+        
         df = pd.read_sql_query(f"SELECT * FROM {view_name}", conn)
         
         # Special handling for MBC Workload Summary
