@@ -165,9 +165,9 @@ class TestMeritBadgeProgressImport(unittest.TestCase):
         
         stats = self.importer.get_import_summary()
         
-        # Should match most scouts (4 out of 5 are in youth roster)
-        self.assertEqual(stats['scout_matches'], 4)
-        self.assertEqual(stats['scout_unmatched'], 1)  # Charlie Davis not in youth roster
+        # Should match all scouts (all 5 are in youth roster)
+        self.assertEqual(stats['scout_matches'], 5)
+        self.assertEqual(stats['scout_unmatched'], 0)  # All scouts should match youth roster
         
         # Verify scout_id is set for matched scouts
         conn = sqlite3.connect(self.db_path)
@@ -178,7 +178,7 @@ class TestMeritBadgeProgressImport(unittest.TestCase):
             WHERE scout_id IS NOT NULL
         """)
         scout_matched_count = cursor.fetchone()[0]
-        self.assertEqual(scout_matched_count, 4)
+        self.assertEqual(scout_matched_count, 5)
         
         conn.close()
     

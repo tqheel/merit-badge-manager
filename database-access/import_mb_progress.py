@@ -202,7 +202,8 @@ class MeritBadgeProgressImporter:
                         mbc_name_raw, 
                         mbc_adult_id, 
                         mbc_match_confidence, 
-                        best_match['match_type']
+                        best_match['match_type'],
+                        cursor  # Pass cursor to prevent database locking
                     )
                     
                     if best_match['match_type'] == 'exact':
@@ -213,12 +214,12 @@ class MeritBadgeProgressImporter:
                     self.logger.debug(f"Matched MBC '{mbc_name_raw}' to {best_match['name']} (confidence: {mbc_match_confidence:.3f})")
                 else:
                     # Store for manual review
-                    self.name_matcher.store_unmatched_name(mbc_name_raw, matches)
+                    self.name_matcher.store_unmatched_name(mbc_name_raw, matches, cursor)
                     self.stats['mbc_unmatched'] += 1
                     self.logger.debug(f"MBC '{mbc_name_raw}' needs manual review (best confidence: {best_match['confidence']:.3f})")
             else:
                 # No matches found
-                self.name_matcher.store_unmatched_name(mbc_name_raw, [])
+                self.name_matcher.store_unmatched_name(mbc_name_raw, [], cursor)
                 self.stats['mbc_unmatched'] += 1
                 self.logger.debug(f"No matches found for MBC '{mbc_name_raw}'")
         else:

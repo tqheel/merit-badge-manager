@@ -418,62 +418,100 @@ class MBCNameMatcher:
         
         return soundex
     
-    def store_unmatched_name(self, mbc_name_raw: str, potential_matches: List[Dict]) -> int:
+    def store_unmatched_name(self, mbc_name_raw: str, potential_matches: List[Dict], cursor=None) -> int:
         """
         Store an unmatched MBC name in the database for manual resolution.
         
         Args:
             mbc_name_raw: The raw MBC name that couldn't be matched
             potential_matches: List of potential matches found
+            cursor: Optional database cursor to use (prevents locking issues)
             
         Returns:
             ID of the stored unmatched name record
         """
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Check if this name already exists
-            cursor.execute("""
-                SELECT id, occurrence_count FROM unmatched_mbc_names 
-                WHERE mbc_name_raw = ?
-            """, (mbc_name_raw,))
-            
-            existing = cursor.fetchone()
-            
-            if existing:
-                # Update occurrence count
-                unmatched_id, count = existing
+            if cursor is not None:
+                # Use provided cursor (part of existing transaction)
+                # Check if this name already exists
                 cursor.execute("""
-                    UPDATE unmatched_mbc_names 
-                    SET occurrence_count = occurrence_count + 1, 
-                        potential_matches = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                """, (json.dumps(potential_matches), unmatched_id))
+                    SELECT id, occurrence_count FROM unmatched_mbc_names 
+                    WHERE mbc_name_raw = ?
+                """, (mbc_name_raw,))
                 
-                self.logger.info(f"Updated occurrence count for unmatched MBC name: {mbc_name_raw}")
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # Update occurrence count
+                    unmatched_id, count = existing
+                    cursor.execute("""
+                        UPDATE unmatched_mbc_names 
+                        SET occurrence_count = occurrence_count + 1, 
+                            potential_matches = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """, (json.dumps(potential_matches), unmatched_id))
+                    
+                    self.logger.info(f"Updated occurrence count for unmatched MBC name: {mbc_name_raw}")
+                else:
+                    # Insert new unmatched name
+                    cursor.execute("""
+                        INSERT INTO unmatched_mbc_names (
+                            mbc_name_raw, occurrence_count, potential_matches
+                        ) VALUES (?, 1, ?)
+                    """, (mbc_name_raw, json.dumps(potential_matches)))
+                    
+                    unmatched_id = cursor.lastrowid
+                    self.logger.info(f"Stored new unmatched MBC name: {mbc_name_raw}")
+                
+                return unmatched_id
+                
             else:
-                # Insert new unmatched name
-                cursor.execute("""
-                    INSERT INTO unmatched_mbc_names (
-                        mbc_name_raw, occurrence_count, potential_matches
-                    ) VALUES (?, 1, ?)
-                """, (mbc_name_raw, json.dumps(potential_matches)))
+                # Use own connection (backward compatibility)
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
                 
-                unmatched_id = cursor.lastrowid
-                self.logger.info(f"Stored new unmatched MBC name: {mbc_name_raw}")
-            
-            conn.commit()
-            conn.close()
-            
-            return unmatched_id
+                # Check if this name already exists
+                cursor.execute("""
+                    SELECT id, occurrence_count FROM unmatched_mbc_names 
+                    WHERE mbc_name_raw = ?
+                """, (mbc_name_raw,))
+                
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # Update occurrence count
+                    unmatched_id, count = existing
+                    cursor.execute("""
+                        UPDATE unmatched_mbc_names 
+                        SET occurrence_count = occurrence_count + 1, 
+                            potential_matches = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """, (json.dumps(potential_matches), unmatched_id))
+                    
+                    self.logger.info(f"Updated occurrence count for unmatched MBC name: {mbc_name_raw}")
+                else:
+                    # Insert new unmatched name
+                    cursor.execute("""
+                        INSERT INTO unmatched_mbc_names (
+                            mbc_name_raw, occurrence_count, potential_matches
+                        ) VALUES (?, 1, ?)
+                    """, (mbc_name_raw, json.dumps(potential_matches)))
+                    
+                    unmatched_id = cursor.lastrowid
+                    self.logger.info(f"Stored new unmatched MBC name: {mbc_name_raw}")
+                
+                conn.commit()
+                conn.close()
+                
+                return unmatched_id
             
         except sqlite3.Error as e:
             self.logger.error(f"Database error storing unmatched name: {e}")
             return -1
     
-    def store_mapping(self, raw_name: str, adult_id: int, confidence: float, mapping_type: str) -> bool:
+    def store_mapping(self, raw_name: str, adult_id: int, confidence: float, mapping_type: str, cursor=None) -> bool:
         """
         Store a name mapping in the database.
         
@@ -482,25 +520,38 @@ class MBCNameMatcher:
             adult_id: The matched adult ID
             confidence: The confidence score
             mapping_type: Type of match ('exact', 'fuzzy', 'manual')
+            cursor: Optional database cursor to use (prevents locking issues)
             
         Returns:
             True if successful, False otherwise
         """
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute("""
-                INSERT OR REPLACE INTO mbc_name_mappings (
-                    raw_name, adult_id, confidence_score, mapping_type, created_by
-                ) VALUES (?, ?, ?, ?, 'system')
-            """, (raw_name, adult_id, confidence, mapping_type))
-            
-            conn.commit()
-            conn.close()
-            
-            self.logger.info(f"Stored mapping: '{raw_name}' -> adult_id {adult_id} (confidence: {confidence:.2f})")
-            return True
+            if cursor is not None:
+                # Use provided cursor (part of existing transaction)
+                cursor.execute("""
+                    INSERT OR REPLACE INTO mbc_name_mappings (
+                        raw_name, adult_id, confidence_score, mapping_type, created_by
+                    ) VALUES (?, ?, ?, ?, 'system')
+                """, (raw_name, adult_id, confidence, mapping_type))
+                
+                self.logger.info(f"Stored mapping: '{raw_name}' -> adult_id {adult_id} (confidence: {confidence:.2f})")
+                return True
+            else:
+                # Use own connection (backward compatibility)
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    INSERT OR REPLACE INTO mbc_name_mappings (
+                        raw_name, adult_id, confidence_score, mapping_type, created_by
+                    ) VALUES (?, ?, ?, ?, 'system')
+                """, (raw_name, adult_id, confidence, mapping_type))
+                
+                conn.commit()
+                conn.close()
+                
+                self.logger.info(f"Stored mapping: '{raw_name}' -> adult_id {adult_id} (confidence: {confidence:.2f})")
+                return True
             
         except sqlite3.Error as e:
             self.logger.error(f"Database error storing mapping: {e}")

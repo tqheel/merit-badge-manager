@@ -504,6 +504,26 @@ elif page == "CSV Import":
                                 success = importer.run_import(force=True)
                                 
                                 if success:
+                                    # Import merit badge progress data if file exists
+                                    mb_progress_path = data_dir / mb_progress_file
+                                    if mb_progress_path.exists():
+                                        st.info("Importing merit badge progress data...")
+                                        try:
+                                            from import_mb_progress import MeritBadgeProgressImporter
+                                            mb_importer = MeritBadgeProgressImporter("merit_badge_manager.db")
+                                            mb_success = mb_importer.import_csv(str(mb_progress_path))
+                                            
+                                            if mb_success:
+                                                stats = mb_importer.get_import_summary()
+                                                st.info(f"✅ Merit Badge Progress imported: {stats['imported_records']} records")
+                                            else:
+                                                st.warning("⚠️ Merit Badge Progress import failed, but roster import succeeded")
+                                                
+                                        except Exception as e:
+                                            st.warning(f"⚠️ Merit Badge Progress import error: {e}")
+                                    else:
+                                        st.info(f"ℹ️ No merit badge progress file found at: data/{mb_progress_file}")
+                                    
                                     st.success("✅ Data imported successfully (with validation errors)!")
                                     st.balloons()
                                     # Clear validation results
@@ -565,6 +585,26 @@ elif page == "CSV Import":
                         success = importer.run_import()
                         
                         if success:
+                            # Import merit badge progress data if file exists
+                            mb_progress_path = data_dir / mb_progress_file
+                            if mb_progress_path.exists():
+                                st.info("Importing merit badge progress data...")
+                                try:
+                                    from import_mb_progress import MeritBadgeProgressImporter
+                                    mb_importer = MeritBadgeProgressImporter("merit_badge_manager.db")
+                                    mb_success = mb_importer.import_csv(str(mb_progress_path))
+                                    
+                                    if mb_success:
+                                        stats = mb_importer.get_import_summary()
+                                        st.info(f"✅ Merit Badge Progress imported: {stats['imported_records']} records")
+                                    else:
+                                        st.warning("⚠️ Merit Badge Progress import failed, but roster import succeeded")
+                                        
+                                except Exception as e:
+                                    st.warning(f"⚠️ Merit Badge Progress import error: {e}")
+                            else:
+                                st.info(f"ℹ️ No merit badge progress file found at: data/{mb_progress_file}")
+                            
                             st.success("✅ Data imported successfully!")
                             st.balloons()
                             # Clear validation results
@@ -649,7 +689,7 @@ elif page == "Database Views":
         st.stop()
     
     # Group views by type
-    adult_views = [v for v in views if 'adult' in v or v in ['training_expiration_summary', 'merit_badge_counselors', 'current_positions', 'registered_volunteers']]
+    adult_views = [v for v in views if 'adult' in v or v in ['training_expiration_summary', 'merit_badge_counselors', 'current_positions', 'registered_volunteers', 'mbc_workload_summary']]
     youth_views = [v for v in views if 'scout' in v or v in ['advancement_progress_by_rank', 'primary_parent_contacts', 'patrol_assignments']]
     other_views = [v for v in views if v not in adult_views and v not in youth_views]
     
@@ -685,7 +725,9 @@ elif page == "Database Views":
             'advancement_progress_by_rank': 'Advancement statistics by rank',
             'primary_parent_contacts': 'Primary parent/guardian contacts',
             'scout_training_expiration_summary': 'Scout training status',
-            'patrol_assignments': 'Patrol membership'
+            'patrol_assignments': 'Patrol membership',
+            'scout_mbc_assignments': 'Scout-to-MBC assignment tracking with status details',
+            'mbc_workload_summary': 'MBC workload statistics and assignment counts'
         }
         
         if selected_view in view_descriptions:

@@ -280,6 +280,106 @@ GROUP BY mbp.merit_badge_name
 ORDER BY scouts_working DESC, mbp.merit_badge_name;
 
 -- =============================================================================
+-- SCOUT-MBC ASSIGNMENT AND WORKLOAD VIEWS
+-- =============================================================================
+
+-- Scout-to-MBC Assignment View
+-- Shows each scout and their assigned MBC for merit badge progress tracking
+CREATE VIEW IF NOT EXISTS scout_mbc_assignments AS
+SELECT 
+    -- Scout Information
+    COALESCE(s.first_name, mbp.scout_first_name) as scout_first_name,
+    COALESCE(s.last_name, mbp.scout_last_name) as scout_last_name,
+    COALESCE(s.bsa_number, CAST(mbp.scout_bsa_number AS INTEGER)) as scout_bsa_number,
+    COALESCE(s.rank, mbp.scout_rank) as scout_rank,
+    s.patrol_name,
+    
+    -- Merit Badge Information
+    mbp.merit_badge_name,
+    mbp.merit_badge_year,
+    mbp.date_completed,
+    
+    -- MBC Assignment Information
+    CASE 
+        WHEN mbp.mbc_adult_id IS NOT NULL THEN 
+            a.first_name || ' ' || a.last_name
+        ELSE 
+            'No MBC Assigned'
+    END as mbc_name,
+    mbp.mbc_name_raw as original_mbc_name,
+    mbp.mbc_match_confidence,
+    
+    -- Status Information
+    CASE 
+        WHEN mbp.date_completed IS NOT NULL AND mbp.date_completed != '' THEN 'Completed'
+        WHEN mbp.mbc_adult_id IS NOT NULL THEN 'In Progress - MBC Assigned'
+        ELSE 'In Progress - Needs MBC'
+    END as assignment_status,
+    
+    -- Progress Information
+    CASE 
+        WHEN mbp.requirements_raw = 'No Requirements Complete, ' THEN 'Not Started'
+        WHEN mbp.requirements_raw IS NULL OR mbp.requirements_raw = '' THEN 'Unknown'
+        ELSE 'Requirements in Progress'
+    END as progress_status,
+    
+    -- IDs for joining
+    mbp.id as merit_badge_progress_id,
+    s.id as scout_id,
+    mbp.mbc_adult_id,
+    mbp.import_date,
+    mbp.last_updated
+
+FROM merit_badge_progress mbp
+LEFT JOIN scouts s ON mbp.scout_id = s.id
+LEFT JOIN adults a ON mbp.mbc_adult_id = a.id
+
+ORDER BY 
+    scout_last_name, 
+    scout_first_name, 
+    merit_badge_name;
+
+-- MBC Workload View
+-- Shows each MBC and how many scouts are currently assigned to them
+CREATE VIEW IF NOT EXISTS mbc_workload_summary AS
+SELECT 
+    -- MBC Information
+    a.first_name || ' ' || a.last_name as mbc_name,
+    a.first_name,
+    a.last_name,
+    a.email,
+    a.bsa_number as mbc_bsa_number,
+    
+    -- Assignment Counts
+    COUNT(mbp.id) as total_assignments,
+    COUNT(CASE WHEN mbp.date_completed IS NULL OR mbp.date_completed = '' THEN 1 END) as active_assignments,
+    COUNT(CASE WHEN mbp.date_completed IS NOT NULL AND mbp.date_completed != '' THEN 1 END) as completed_assignments,
+    
+    -- Progress Status Breakdown
+    COUNT(CASE WHEN mbp.requirements_raw = 'No Requirements Complete, ' THEN 1 END) as scouts_not_started,
+    COUNT(CASE WHEN mbp.requirements_raw IS NOT NULL 
+                AND mbp.requirements_raw != '' 
+                AND mbp.requirements_raw != 'No Requirements Complete, ' THEN 1 END) as scouts_in_progress,
+    
+    -- Unique Statistics
+    COUNT(DISTINCT mbp.scout_id) as unique_scouts_assigned,
+    COUNT(DISTINCT mbp.merit_badge_name) as unique_merit_badges,
+    
+    -- Recent Activity
+    MAX(mbp.last_updated) as last_assignment_update,
+    MIN(mbp.import_date) as first_assignment_date,
+    
+    -- Merit Badge List (for detailed view)
+    GROUP_CONCAT(DISTINCT mbp.merit_badge_name) as merit_badges_counseling
+
+FROM adults a
+INNER JOIN merit_badge_progress mbp ON a.id = mbp.mbc_adult_id
+
+GROUP BY a.id, a.first_name, a.last_name, a.email, a.bsa_number
+
+ORDER BY total_assignments DESC, mbc_name;
+
+-- =============================================================================
 -- SCHEMA INFORMATION
 -- =============================================================================
 
