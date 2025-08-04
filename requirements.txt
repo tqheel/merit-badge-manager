@@ -9,3 +9,5 @@ pytest
 pytest-playwright
 playwright
 streamlit
+fuzzywuzzy
+python-levenshtein
