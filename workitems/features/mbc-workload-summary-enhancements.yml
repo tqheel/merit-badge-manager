@@ -1,0 +1,114 @@
+name: MBC Workload Summary Enhancements
+description: Enhanced viewing capabilities for Merit Badge Counselor Workload Summary with filtering, sorting, and export functionality
+labels: [enhancement, user story]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## MBC Workload Summary Enhancements
+        Enhanced functionality for viewing and interacting with the Merit Badge Counselor Workload Summary to improve operational efficiency and decision-making.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are you trying to solve?
+      placeholder: |
+        When viewing the MBC Workload Summary in the Merit Badge Manager web interface, users currently have limited capabilities for analyzing and acting on the workload data. The existing view shows basic statistics like total assignments, active assignments, and completed assignments for each counselor, but lacks essential features for operational management:
+
+        1. No filtering capabilities to focus on specific subsets of counselors (e.g., overloaded counselors, counselors with no assignments)
+        2. Limited sorting options to identify workload patterns or prioritize actions
+        3. No export functionality to share data with leadership or use in external reporting
+        4. No drill-down capabilities to see detailed scout assignments for each counselor
+        5. No visual indicators for workload imbalances or alerts for counselors needing attention
+        6. No ability to take quick actions directly from the summary view
+
+        This limits the effectiveness of the MBC Workload Summary as a management tool for making data-driven assignment decisions and balancing counselor workloads.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like to see this solved?
+      placeholder: |
+        Enhance the MBC Workload Summary view with comprehensive filtering, sorting, export, and action capabilities:
+
+        **Filtering & Search:**
+        - Filter by workload thresholds (e.g., show only counselors with >X assignments)
+        - Filter by assignment status (active only, completed only, mixed)
+        - Filter by merit badge categories or specific merit badges
+        - Search by counselor name or contact information
+        - Filter by recent activity (counselors with recent updates)
+
+        **Enhanced Sorting & Display:**
+        - Sort by any column (assignments, completion rates, last activity)
+        - Visual indicators for workload levels (color-coded bars or badges)
+        - Progress indicators showing completion rates
+        - Highlight counselors who may need attention (overloaded or inactive)
+
+        **Export Capabilities:**
+        - Export filtered data to Excel with formatting
+        - Generate PDF reports with charts and summaries
+        - Create CSV exports for external analysis
+        - Email reports directly to leadership
+
+        **Drill-down Functionality:**
+        - Click on counselor to see detailed scout assignments
+        - Show individual merit badge progress for each counselor
+        - Display scout contact information for follow-up
+        - Link to parent communication tools
+
+        **Quick Actions:**
+        - Direct email links for counselor contact
+        - Quick assignment actions (reassign scouts, add notes)
+        - Mark counselors as temporarily unavailable
+        - Generate assignment recommendations based on workload balance
+
+        This enhancement transforms the MBC Workload Summary from a static report into a dynamic management dashboard.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references here.
+      placeholder: |
+        **Technical Requirements:**
+        - Build upon existing `mbc_workload_summary` database view
+        - Integrate with Streamlit web interface filtering components
+        - Maintain performance with large datasets (consider pagination)
+        - Ensure mobile-responsive design for field use
+        - Follow existing UI patterns and styling
+
+        **Database Integration:**
+        - Leverage existing adult roster and merit badge progress schemas
+        - Use existing foreign key relationships for drill-down functionality
+        - Consider adding indexes for new filtering queries
+        - Maintain data integrity with real-time updates
+
+        **User Experience Considerations:**
+        - Intuitive filtering interface with clear reset options
+        - Responsive design for different screen sizes
+        - Fast loading times even with complex filters
+        - Clear visual hierarchy and data presentation
+        - Consistent with existing Merit Badge Manager UI patterns
+
+        **Security & Performance:**
+        - Ensure no PII exposure in exports or shared views
+        - Implement appropriate caching for performance
+        - Validate user inputs for filtering and sorting
+        - Handle edge cases (empty data, network issues)
+
+        **Future Integration Points:**
+        - Parent communication system for scout follow-up
+        - Assignment recommendation engine
+        - Workload balancing algorithms
+        - Historical trending and analytics
+        - Mobile app integration for field access
+
+        **Compliance:**
+        - Follow coding standards from .github/copilot-instructions.md
+        - No PII or Troop data in codebase, tests, or documentation
+        - Include comprehensive test cases for all new functionality
+        - Update documentation to reflect new capabilities
+        - Ensure accessibility compliance (WCAG guidelines)
