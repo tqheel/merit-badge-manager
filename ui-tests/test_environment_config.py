@@ -10,17 +10,17 @@ from pathlib import Path
 
 @pytest.mark.ui
 def test_environment_configuration_page_loads(page: Page, streamlit_app):
-    """Test that the Environment Configuration page loads correctly."""
+    """Test that the Settings page loads correctly."""
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
     # Check for environment configuration elements
-    expect(page.locator("text=Environment Configuration")).to_be_visible()
+    expect(page.locator("text=Environment Settings")).to_be_visible()
     expect(page.locator('[data-testid="stForm"]')).to_be_visible()
 
 
@@ -30,8 +30,8 @@ def test_environment_variables_display(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -46,8 +46,8 @@ def test_environment_configuration_save(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -67,8 +67,8 @@ def test_environment_configuration_validation(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -98,8 +98,8 @@ def test_environment_file_creation(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -121,8 +121,8 @@ def test_environment_configuration_form_fields(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -140,8 +140,8 @@ def test_environment_configuration_help_text(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -158,8 +158,8 @@ def test_environment_configuration_reset(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -179,8 +179,8 @@ def test_environment_configuration_accessibility(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -201,8 +201,8 @@ def test_environment_configuration_error_handling(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -230,8 +230,8 @@ def test_environment_configuration_persistence(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     env_config_radio.click()
     time.sleep(1)
     
@@ -255,7 +255,7 @@ def test_environment_configuration_persistence(page: Page, streamlit_app):
             page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
             
             # Navigate back to config page
-            env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+            env_config_radio = page.locator('label:has-text("Settings")').first
             env_config_radio.click()
             time.sleep(1)
             

@@ -15,8 +15,8 @@ def test_streamlit_app_loads(page: Page, streamlit_app):
     # Wait for Streamlit to fully load
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Check that the main title is present
-    expect(page.locator("h1")).to_contain_text("Merit Badge Manager")
+    # Check that the main title is present - use more specific selector to avoid strict mode violation
+    expect(page.locator("h1").filter(has_text="Merit Badge Manager")).to_be_visible()
     
     # Check that the sidebar is present
     expect(page.locator('[data-testid="stSidebar"]')).to_be_visible()
@@ -30,9 +30,8 @@ def test_sidebar_navigation(page: Page, streamlit_app):
     
     # Test navigation to each page
     pages_to_test = [
-        "Environment Configuration",
-        "CSV Import & Validation", 
-        "Database Management",
+        "Settings",
+        "CSV Import", 
         "Database Views"
     ]
     
@@ -46,12 +45,10 @@ def test_sidebar_navigation(page: Page, streamlit_app):
             time.sleep(1)
             
             # Verify we're on the correct page by checking for page-specific content
-            if page_name == "Environment Configuration":
-                expect(page.locator("text=Environment Configuration")).to_be_visible()
-            elif page_name == "CSV Import & Validation":
+            if page_name == "Settings":
+                expect(page.locator("text=Environment Settings")).to_be_visible()
+            elif page_name == "CSV Import":
                 expect(page.locator("text=CSV Import & Validation")).to_be_visible()
-            elif page_name == "Database Management":
-                expect(page.locator("text=Database Management")).to_be_visible()
             elif page_name == "Database Views":
                 expect(page.locator("text=Database Views")).to_be_visible()
 
@@ -62,14 +59,14 @@ def test_environment_configuration_page(page: Page, streamlit_app):
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
-    # Navigate to Environment Configuration page
-    env_config_radio = page.locator('label:has-text("Environment Configuration")').first
+    # Navigate to Settings page
+    env_config_radio = page.locator('label:has-text("Settings")').first
     if env_config_radio.is_visible():
         env_config_radio.click()
         time.sleep(1)
         
         # Check that environment configuration elements are present
-        expect(page.locator("text=Environment Configuration")).to_be_visible()
+        expect(page.locator("text=Environment Settings")).to_be_visible()
         
         # Look for environment variable controls
         # Note: Exact selectors may need adjustment based on Streamlit's rendering
@@ -83,7 +80,7 @@ def test_csv_import_page_loads(page: Page, streamlit_app):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     if csv_import_radio.is_visible():
         csv_import_radio.click()
         time.sleep(1)
@@ -93,25 +90,6 @@ def test_csv_import_page_loads(page: Page, streamlit_app):
         
         # Look for file uploader
         expect(page.locator('[data-testid="stFileUploader"]')).to_be_visible()
-
-
-@pytest.mark.ui
-def test_database_management_page(page: Page, streamlit_app):
-    """Test the Database Management page functionality.""" 
-    page.goto(streamlit_app)
-    page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
-    
-    # Navigate to Database Management page
-    db_mgmt_radio = page.locator('label:has-text("Database Management")').first
-    if db_mgmt_radio.is_visible():
-        db_mgmt_radio.click()
-        time.sleep(1)
-        
-        # Check for database management elements
-        expect(page.locator("text=Database Management")).to_be_visible()
-        
-        # Look for database control buttons
-        expect(page.locator('button:has-text("Create New Database")')).to_be_visible()
 
 
 @pytest.mark.ui
@@ -131,31 +109,7 @@ def test_database_views_page_no_database(page: Page, streamlit_app, clean_databa
 
 
 @pytest.mark.ui
-@pytest.mark.slow
-def test_create_new_database(page: Page, streamlit_app, clean_database):
-    """Test creating a new database through the UI."""
-    page.goto(streamlit_app)
-    page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
-    
-    # Navigate to Database Management page
-    db_mgmt_radio = page.locator('label:has-text("Database Management")').first
-    if db_mgmt_radio.is_visible():
-        db_mgmt_radio.click()
-        time.sleep(1)
-        
-        # Click create new database button
-        create_btn = page.locator('button:has-text("Create New Database")')
-        if create_btn.is_visible():
-            create_btn.click()
-            
-            # Wait for database creation to complete
-            time.sleep(3)
-            
-            # Look for success message
-            expect(page.locator("text=Database created successfully")).to_be_visible()
-
-
-@pytest.mark.ui
+@pytest.mark.slow 
 def test_responsive_design(page: Page, streamlit_app):
     """Test that the UI works on different screen sizes."""
     # Test desktop size
