@@ -119,14 +119,15 @@ The server will be available at:
 - **No Command Line Required**: All functionality accessible through web browser
 
 ### Core Functionality
-- **CSV Data Import**: Process Merit Badge In-Progress Reports and Troop Roster Files
-- **Fuzzy Name Matching**: Intelligent matching of MBC names across data sources
-- **Database Management**: SQLite database with proper schema and relationships
+- **Merit Badge In-Progress Report Import**: Comprehensive CSV import system for Scoutbook Merit Badge In-Progress Reports with intelligent header cleaning, requirement parsing, and progress tracking
+- **Advanced MBC Name Matching**: 4-tier fuzzy matching system (exact, nickname, string similarity, phonetic) with configurable confidence thresholds and manual review capabilities
+- **CSV Data Import**: Process Merit Badge In-Progress Reports and Troop Roster Files with validation and error handling
+- **Database Management**: SQLite database with proper schema and relationships, including 51 optimized indexes and 6 specialized views
 - **Adult Roster Management**: Complete adult member database with training, merit badges, and positions
 - **Youth Roster Management**: Comprehensive Scout tracking with merit badge progress, advancement history, and parent contacts
-- **Scout-to-Counselor Integration**: Seamless assignment system connecting Scouts with adult merit badge counselors
-- **Reporting & Export**: Generate actionable reports and Excel exports
-- **MBC Assignment Engine**: Intelligent assignment recommendations
+- **Scout-to-Counselor Integration**: Seamless assignment system connecting Scouts with adult merit badge counselors through BSA number matching
+- **Reporting & Export**: Generate actionable reports and Excel exports with comprehensive import statistics
+- **MBC Assignment Engine**: Intelligent assignment recommendations with data quality validation
 
 ### GitHub Integration
 - **Feature Publishing**: Convert YAML feature requests to GitHub Issues
@@ -154,18 +155,23 @@ merit-badge-manager/
 ├── database/                       # Database layer - SQL schemas and setup scripts
 │   ├── create_adult_roster_schema.sql  # Adult database schema
 │   ├── youth_database_schema.sql       # Youth database schema
+│   ├── merit_badge_progress_schema.sql # Merit Badge progress tracking schema
 │   ├── setup_database.py          # Automated database creation
 │   └── README.md                   # Database documentation
 ├── database-access/                # Database access layer - Data processing and imports
 │   ├── csv_validator.py           # CSV validation logic
 │   ├── roster_parser.py           # CSV parsing functionality
-│   └── import_roster.py           # Data import and processing
+│   ├── import_roster.py           # Data import and processing
+│   ├── import_mb_progress.py      # Merit Badge In-Progress Report import system
+│   ├── mb_progress_parser.py      # Merit Badge progress CSV parser with header cleaning
+│   └── mbc_name_matcher.py        # Advanced fuzzy MBC name matching engine
 ├── web-ui/                         # Web UI layer - Streamlit application
 │   └── main.py                     # Main Streamlit web interface
 ├── mcp-server/                     # MCP server layer - FastAPI server with GitHub integration
 │   └── main.py                     # FastAPI server implementation
 ├── docs/                           # Documentation
-│   └── youth-database-schema.md    # Youth roster schema documentation
+│   ├── youth-database-schema.md    # Youth roster schema documentation
+│   └── merit_badge_import_guide.md # Merit Badge In-Progress Report import documentation
 ├── logs/                           # Application logs
 ├── scripts/                        # Utility scripts
 │   ├── create_test_database.py    # Test database with fake data generator
@@ -173,6 +179,10 @@ merit-badge-manager/
 ├── tests/                          # Unit and integration tests
 │   ├── test_database_schema.py    # Adult database schema and functionality tests
 │   ├── test_youth_database_schema.py   # Youth database schema and integration tests
+│   ├── test_mb_progress_import.py # Merit Badge progress import system tests
+│   ├── test_mb_progress_parser.py # Merit Badge CSV parser tests
+│   ├── test_mb_progress_views.py  # Merit Badge database views tests
+│   ├── test_mbc_name_matcher.py   # MBC fuzzy name matching tests
 │   ├── test_mcp_server.py         # MCP server tests
 │   └── test_*.py                  # Additional test files
 ├── ui-tests/                       # UI tests with Playwright
@@ -260,6 +270,60 @@ When creating feature or bug YAML files, follow these formatting requirements:
 ```
 
 **Important**: Always use the `|` block literal syntax for multi-line placeholder content to ensure complete GitHub issue publishing.
+
+## Merit Badge In-Progress Report Import
+
+The system includes comprehensive support for importing Merit Badge In-Progress Reports from Scoutbook with advanced data processing and matching capabilities.
+
+### Quick Import Examples
+
+**Web Interface (Recommended):**
+1. Start the web interface: `streamlit run web-ui/main.py`
+2. Navigate to "CSV Import & Validation" 
+3. Upload your Merit Badge In-Progress Report CSV file
+4. Review validation results and matching statistics
+5. Import data with automatic MBC name matching
+
+**Command Line Usage:**
+```bash
+# Make sure virtual environment is activated first!
+source venv/bin/activate
+
+# Import Merit Badge In-Progress Report with auto-matching
+python database-access/import_mb_progress.py data/mb_report.csv --auto-match-threshold 0.9
+
+# Test MBC name matching against adult roster
+python database-access/mbc_name_matcher.py --database merit_badge_manager.db "Mike Johnson"
+
+# Parse CSV file and view structure (validation only)
+python database-access/mb_progress_parser.py data/mb_report.csv --verbose
+```
+
+### Import Features
+- **Intelligent CSV Processing**: Removes Scoutbook metadata, extracts merit badge years, parses complex requirements
+- **4-Tier MBC Matching**: Exact (100%), nickname-aware (95%), fuzzy string, and phonetic matching (80%)
+- **Scout Integration**: Links progress to youth roster via BSA number matching
+- **Comprehensive Validation**: Detailed error reporting and data quality checks
+- **Import Statistics**: Complete reporting of matching success rates and data insights
+
+### Database Views for Merit Badge Management
+```bash
+# Connect to database to view imported data
+sqlite3 merit_badge_manager.db
+
+# View comprehensive merit badge status
+sqlite> SELECT * FROM merit_badge_status_view LIMIT 5;
+
+# Find scouts needing counselor assignments  
+sqlite> SELECT * FROM scouts_available_for_mbc_assignment LIMIT 5;
+
+# Review unmatched MBC names for manual resolution
+sqlite> SELECT * FROM unmatched_mbc_assignments LIMIT 5;
+
+sqlite> .quit
+```
+
+For detailed documentation, see: **[Merit Badge Import Guide](docs/merit_badge_import_guide.md)**
 
 ## API Usage
 
@@ -402,14 +466,14 @@ The test database includes:
 
 ### Testing the Database
 
-Run the comprehensive test suite to verify database functionality for both adult and youth systems:
+Run the comprehensive test suite to verify database functionality for both adult and youth systems, plus Merit Badge progress import:
 
 ```bash
 # Make sure virtual environment is activated first!
 source venv/bin/activate
 
-# Run all database tests (adult and youth)
-python -m pytest tests/test_database_schema.py tests/test_youth_database_schema.py -v
+# Run all database tests (adult, youth, and merit badge progress)
+python -m pytest tests/test_database_schema.py tests/test_youth_database_schema.py tests/test_mb_progress*.py -v
 
 # Run specific adult database tests
 python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_database_creation -v
@@ -420,6 +484,12 @@ python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_fake_da
 python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_youth_schema_creation -v
 python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_scout_counselor_integration -v
 python -m pytest tests/test_youth_database_schema.py::TestYouthDatabaseSchema::test_validation_views -v
+
+# Run Merit Badge progress import tests
+python -m pytest tests/test_mb_progress_import.py -v
+python -m pytest tests/test_mb_progress_parser.py -v
+python -m pytest tests/test_mb_progress_views.py -v
+python -m pytest tests/test_mbc_name_matcher.py -v
 ```
 
 ### UI Testing with Playwright
@@ -489,7 +559,7 @@ See `ui-tests/README.md` for detailed UI testing documentation.
 
 ### Database Schema Overview
 
-The database includes comprehensive schemas for both adult and youth roster management:
+The database includes comprehensive schemas for both adult and youth roster management, plus specialized Merit Badge progress tracking:
 
 **Adult Tables:**
 - `adults` - Primary member information (names, contact, BSA numbers, demographics)
@@ -505,14 +575,21 @@ The database includes comprehensive schemas for both adult and youth roster mana
 - `scout_merit_badge_progress` - Merit badge work tracking with counselor assignments
 - `scout_advancement_history` - Historical record of rank progression
 
+**Merit Badge Progress Tables:**
+- `merit_badge_progress` - Detailed Merit Badge In-Progress Report data with requirement tracking
+- `unmatched_mbc_names` - MBC names requiring manual review and resolution
+- `mbc_name_mappings` - Manual mappings for fuzzy name matching improvements
+- `merit_badge_requirements` - Individual requirement completion tracking with choice groups
+
 **Integration Features:**
 - **Scout-to-Counselor Assignments**: Connects Scouts with adult merit badge counselors
+- **Merit Badge Progress Integration**: Links imported Scoutbook data with youth and adult rosters via BSA numbers
 - **Cross-System BSA Number Matching**: Enables data reconciliation between systems
 - **Shared Validation Patterns**: Consistent data quality across adult and youth systems
 
 **Performance Features:**
-- **36 optimized indexes** for common query patterns across both systems  
-- **13 validation views** for data quality checks and operational reporting
+- **51 optimized indexes** for common query patterns across all systems  
+- **19 validation and reporting views** for data quality checks and operational reporting
 - Foreign key constraints with cascade delete for data integrity
 - Automatic timestamp triggers for audit trails
 
@@ -520,26 +597,20 @@ The database includes comprehensive schemas for both adult and youth roster mana
 
 The database includes several validation and reporting views for operational insights and data quality checks:
 
-**Adults Missing Data View** (`adults_missing_data`)
-- Identifies adults with missing required information
-- Helps ensure data completeness for roster management
+**Adult Roster Views:**
+- **Adults Missing Data View** (`adults_missing_data`) - Identifies adults with missing required information
+- **Training Expiration Summary View** (`training_expiration_summary`) - Shows training status (current, expired, expiring soon)
+- **Merit Badge Counselors View** (`merit_badge_counselors`) - Lists counselors available for each merit badge
+- **Current Positions View** (`current_positions`) - Shows current position assignments and tenure information  
+- **Registered Volunteers View** (`registered_volunteers`) - Shows all adults with BSA numbers and their active roles
 
-**Training Expiration Summary View** (`training_expiration_summary`)  
-- Shows training status (current, expired, expiring soon)
-- Critical for compliance tracking and certification management
-
-**Merit Badge Counselors View** (`merit_badge_counselors`)
-- Lists counselors available for each merit badge
-- Enables efficient Scout-to-counselor assignment workflows
-
-**Current Positions View** (`current_positions`)
-- Shows current position assignments and tenure information  
-- Provides leadership structure overview
-
-**Registered Volunteers View** (`registered_volunteers`)
-- Shows all adults with BSA numbers (registered volunteers) and their active roles
-- Comprehensive view of all registered adults, including those without current positions
-- Enables quick identification of volunteer capacity and leadership gaps
+**Merit Badge Progress Views:**
+- **Merit Badge Status View** (`merit_badge_status_view`) - Comprehensive merit badge progress with Scout and counselor details
+- **Scouts Available for MBC Assignment** (`scouts_available_for_mbc_assignment`) - Scouts with merit badge work but no assigned counselor
+- **Unmatched MBC Assignments** (`unmatched_mbc_assignments`) - Progress records with unresolved counselor names
+- **MBC Assignment Summary** (`mbc_assignment_summary`) - Statistical summary of counselor assignment success rates
+- **Merit Badge Progress Summary** (`merit_badge_progress_summary`) - Overview of merit badge work across all Scouts
+- **Data Quality Dashboard** (`data_quality_dashboard`) - Comprehensive data quality metrics and validation results
 
 ### Validating Database Content
 
