@@ -15,7 +15,7 @@ def test_csv_file_upload_validation(page: Page, streamlit_app, sample_csv_files)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     csv_import_radio.click()
     time.sleep(1)
     
@@ -57,7 +57,7 @@ def test_csv_import_workflow(page: Page, streamlit_app, sample_csv_files, clean_
         time.sleep(3)
     
     # Now go to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     csv_import_radio.click()
     time.sleep(1)
     
@@ -96,7 +96,7 @@ John,Doe,Invalid Data
 """)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     csv_import_radio.click()
     time.sleep(1)
     
@@ -127,7 +127,7 @@ def test_csv_upload_file_types(page: Page, streamlit_app, tmp_path):
     txt_file.write_text("This is not a CSV file")
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     csv_import_radio.click()
     time.sleep(1)
     
@@ -147,7 +147,7 @@ def test_csv_progress_indicators(page: Page, streamlit_app, sample_csv_files):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     csv_import_radio.click()
     time.sleep(1)
     
@@ -178,7 +178,7 @@ def test_csv_validation_results_display(page: Page, streamlit_app, sample_csv_fi
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     csv_import_radio.click()
     time.sleep(1)
     
@@ -209,7 +209,7 @@ def test_csv_clear_and_reupload(page: Page, streamlit_app, sample_csv_files):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
+    csv_import_radio = page.locator('label:has-text("CSV Import")').first
     csv_import_radio.click()
     time.sleep(1)
     
