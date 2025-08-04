@@ -12,6 +12,7 @@ PRAGMA foreign_keys = ON;
 
 -- Drop tables in reverse dependency order to avoid foreign key constraint issues
 DROP TABLE IF EXISTS merit_badge_requirements;
+DROP TABLE IF EXISTS mbc_manual_matches;
 DROP TABLE IF EXISTS mbc_name_mappings;
 DROP TABLE IF EXISTS unmatched_mbc_names;
 DROP TABLE IF EXISTS merit_badge_progress;
@@ -78,6 +79,26 @@ CREATE TABLE mbc_name_mappings (
     UNIQUE(raw_name, adult_id)
 );
 
+-- MBC Manual Matches Table (Track manual matching decisions with audit trail)
+CREATE TABLE mbc_manual_matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    unmatched_mbc_name TEXT NOT NULL,
+    matched_adult_id INTEGER, -- NULL if marked as invalid/skip
+    match_action TEXT NOT NULL, -- 'matched', 'skipped', 'marked_invalid', 'create_new', 'undone'
+    confidence_score REAL, -- User-assigned or calculated confidence
+    user_name TEXT NOT NULL, -- User who made the decision
+    notes TEXT, -- Optional notes about the decision
+    original_match_id INTEGER, -- Reference to previous match if undoing
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Note: No FK constraint to adults or unmatched_mbc_names since they're across schemas
+    -- application-level referential integrity is maintained
+    
+    -- Unique constraint to prevent duplicate active decisions
+    UNIQUE(unmatched_mbc_name, match_action) 
+    -- This allows multiple entries for the same name if actions differ (e.g., match then undo)
+);
+
 -- Merit Badge Requirements Tracking Table (Parse complex requirements)
 CREATE TABLE merit_badge_requirements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,6 +133,13 @@ CREATE INDEX idx_mbc_mappings_raw_name ON mbc_name_mappings(raw_name);
 CREATE INDEX idx_mbc_mappings_adult_id ON mbc_name_mappings(adult_id);
 CREATE INDEX idx_mbc_mappings_confidence ON mbc_name_mappings(confidence_score);
 
+-- Manual matches indexes
+CREATE INDEX idx_manual_matches_name ON mbc_manual_matches(unmatched_mbc_name);
+CREATE INDEX idx_manual_matches_adult_id ON mbc_manual_matches(matched_adult_id);
+CREATE INDEX idx_manual_matches_action ON mbc_manual_matches(match_action);
+CREATE INDEX idx_manual_matches_user ON mbc_manual_matches(user_name);
+CREATE INDEX idx_manual_matches_created ON mbc_manual_matches(created_at);
+
 -- Requirements indexes
 CREATE INDEX idx_mb_requirements_progress_id ON merit_badge_requirements(progress_id);
 CREATE INDEX idx_mb_requirements_number ON merit_badge_requirements(requirement_number);
@@ -145,6 +173,7 @@ END;
 DROP VIEW IF EXISTS merit_badge_status_view;
 DROP VIEW IF EXISTS unmatched_mbc_assignments;
 DROP VIEW IF EXISTS scouts_available_for_mbc_assignment;
+DROP VIEW IF EXISTS mbc_manual_matches_summary;
 
 -- Comprehensive Merit Badge Status View
 -- Note: This view uses LEFT JOINs since foreign key constraints cross schema boundaries
@@ -187,9 +216,26 @@ SELECT
     umn.is_resolved,
     umn.notes,
     umn.created_at,
-    umn.updated_at
+    umn.updated_at,
+    -- Manual match status information
+    CASE 
+        WHEN mmm.match_action = 'matched' THEN 'Manually Matched'
+        WHEN mmm.match_action = 'skipped' THEN 'Skipped'
+        WHEN mmm.match_action = 'marked_invalid' THEN 'Marked Invalid'
+        WHEN mmm.match_action = 'create_new' THEN 'New Adult Needed'
+        ELSE 'Unresolved'
+    END as manual_match_status,
+    mmm.user_name as matched_by,
+    mmm.created_at as manual_match_date
 FROM merit_badge_progress mbp
 LEFT JOIN unmatched_mbc_names umn ON mbp.mbc_name_raw = umn.mbc_name_raw
+LEFT JOIN (
+    -- Get the most recent manual match decision for each name
+    SELECT unmatched_mbc_name, match_action, user_name, created_at, matched_adult_id,
+           ROW_NUMBER() OVER (PARTITION BY unmatched_mbc_name ORDER BY created_at DESC) as rn
+    FROM mbc_manual_matches
+    WHERE match_action != 'undone'
+) mmm ON mbp.mbc_name_raw = mmm.unmatched_mbc_name AND mmm.rn = 1
 WHERE mbp.mbc_name_raw != '' 
   AND mbp.mbc_name_raw IS NOT NULL
   AND mbp.mbc_adult_id IS NULL
@@ -217,6 +263,30 @@ WHERE (mbp.mbc_name_raw = '' OR mbp.mbc_name_raw IS NULL)
   OR mbp.mbc_adult_id IS NULL
 GROUP BY mbp.id
 ORDER BY mbp.scout_last_name, mbp.scout_first_name, mbp.merit_badge_name;
+
+-- MBC Manual Matches Summary View
+-- Shows statistics about manual matching decisions and user activity
+CREATE VIEW mbc_manual_matches_summary AS
+SELECT 
+    -- Overall statistics
+    COUNT(*) as total_manual_decisions,
+    COUNT(CASE WHEN match_action = 'matched' THEN 1 END) as matched_count,
+    COUNT(CASE WHEN match_action = 'skipped' THEN 1 END) as skipped_count,
+    COUNT(CASE WHEN match_action = 'marked_invalid' THEN 1 END) as invalid_count,
+    COUNT(CASE WHEN match_action = 'create_new' THEN 1 END) as create_new_count,
+    COUNT(CASE WHEN match_action = 'undone' THEN 1 END) as undone_count,
+    
+    -- User activity
+    user_name,
+    MIN(created_at) as first_decision,
+    MAX(created_at) as last_decision,
+    
+    -- Unique names processed
+    COUNT(DISTINCT unmatched_mbc_name) as unique_names_processed
+    
+FROM mbc_manual_matches
+GROUP BY user_name
+ORDER BY total_manual_decisions DESC, user_name;
 
 -- =============================================================================
 -- VALIDATION VIEWS (for data quality checks)
