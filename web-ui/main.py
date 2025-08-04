@@ -323,6 +323,121 @@ def get_available_views() -> List[str]:
             conn.close()
         return []
 
+def get_scout_assignments_for_mbc(mbc_adult_id: int) -> List[Dict]:
+    """Get all scout assignments for a specific MBC."""
+    conn = get_database_connection()
+    if not conn:
+        return []
+    
+    try:
+        query = """
+        SELECT 
+            scout_first_name,
+            scout_last_name,
+            scout_bsa_number,
+            scout_rank,
+            merit_badge_name,
+            merit_badge_year,
+            date_completed,
+            requirements_raw,
+            CASE 
+                WHEN date_completed IS NOT NULL AND date_completed != '' THEN 'Completed'
+                ELSE 'In Progress'
+            END as status
+        FROM merit_badge_progress 
+        WHERE mbc_adult_id = ?
+        ORDER BY scout_last_name, scout_first_name, merit_badge_name
+        """
+        
+        cursor = conn.cursor()
+        cursor.execute(query, (mbc_adult_id,))
+        rows = cursor.fetchall()
+        
+        # Convert to list of dictionaries
+        columns = [desc[0] for desc in cursor.description]
+        assignments = []
+        for row in rows:
+            assignments.append(dict(zip(columns, row)))
+        
+        return assignments
+        
+    except Exception as e:
+        st.error(f"Error fetching scout assignments: {e}")
+        return []
+    finally:
+        conn.close()
+
+def display_mbc_modal(mbc_name: str, mbc_adult_id: int):
+    """Display modal dialog with scout assignments for selected MBC."""
+    st.markdown("---")
+    st.subheader(f"🎯 Scout Assignments for {mbc_name}")
+    
+    # Get scout assignments
+    assignments = get_scout_assignments_for_mbc(mbc_adult_id)
+    
+    if not assignments:
+        st.info(f"No scout assignments found for {mbc_name}.")
+        if st.button("Close", key="close_modal_empty"):
+            st.session_state.selected_mbc = None
+            st.rerun()
+        return
+    
+    # Group assignments by scout
+    scouts_dict = {}
+    for assignment in assignments:
+        scout_key = f"{assignment['scout_first_name']} {assignment['scout_last_name']}"
+        if scout_key not in scouts_dict:
+            scouts_dict[scout_key] = {
+                'scout_info': {
+                    'name': scout_key,
+                    'bsa_number': assignment['scout_bsa_number'],
+                    'rank': assignment['scout_rank']
+                },
+                'merit_badges': []
+            }
+        
+        scouts_dict[scout_key]['merit_badges'].append({
+            'name': assignment['merit_badge_name'],
+            'year': assignment['merit_badge_year'],
+            'status': assignment['status'],
+            'requirements': assignment['requirements_raw'] or 'No requirements recorded'
+        })
+    
+    # Display scout assignments
+    st.write(f"**Total Scouts:** {len(scouts_dict)}")
+    st.write(f"**Total Merit Badge Assignments:** {len(assignments)}")
+    
+    # Create responsive layout
+    for scout_name, scout_data in scouts_dict.items():
+        with st.expander(f"📍 {scout_name} - {scout_data['scout_info']['rank']} (BSA #{scout_data['scout_info']['bsa_number']})", expanded=True):
+            
+            # Merit badges for this scout
+            st.write("**Merit Badges:**")
+            
+            for mb in scout_data['merit_badges']:
+                col1, col2, col3 = st.columns([3, 1, 1])
+                
+                with col1:
+                    status_emoji = "✅" if mb['status'] == 'Completed' else "🔄"
+                    st.write(f"{status_emoji} **{mb['name']}** ({mb['year']})")
+                    
+                with col2:
+                    if mb['status'] == 'Completed':
+                        st.success("Completed")
+                    else:
+                        st.info("In Progress")
+                
+                with col3:
+                    st.caption(f"Requirements: {mb['requirements'][:30]}{'...' if len(mb['requirements']) > 30 else ''}")
+    
+    # Close button
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("✖️ Close", key="close_modal", use_container_width=True):
+            st.session_state.selected_mbc = None
+            st.rerun()
+
 def display_view_data(view_name: str):
     """Display data from a database view."""
     conn = get_database_connection()
@@ -332,7 +447,12 @@ def display_view_data(view_name: str):
     
     try:
         df = pd.read_sql_query(f"SELECT * FROM {view_name}", conn)
-        st.dataframe(df, use_container_width=True)
+        
+        # Special handling for MBC Workload Summary
+        if view_name == 'mbc_workload_summary':
+            display_mbc_workload_with_modal(df)
+        else:
+            st.dataframe(df, use_container_width=True)
         
         # Display record count
         st.info(f"Total records: {len(df)}")
@@ -341,6 +461,63 @@ def display_view_data(view_name: str):
         st.error(f"Error loading view {view_name}: {e}")
     finally:
         conn.close()
+
+def display_mbc_workload_with_modal(df: pd.DataFrame):
+    """Display MBC workload summary with clickable MBC names that open modal dialogs."""
+    
+    # Initialize session state for selected MBC
+    if 'selected_mbc' not in st.session_state:
+        st.session_state.selected_mbc = None
+    
+    # Check if modal should be displayed
+    if st.session_state.selected_mbc:
+        mbc_info = st.session_state.selected_mbc
+        display_mbc_modal(mbc_info['name'], mbc_info['adult_id'])
+        return
+    
+    # Display MBC workload summary table with clickable names
+    st.write("**Click on an MBC name to view their scout assignments**")
+    
+    # Create a custom display of the dataframe with clickable MBC names
+    for index, row in df.iterrows():
+        with st.container():
+            col1, col2, col3, col4, col5, col6 = st.columns([3, 1, 1, 1, 1, 2])
+            
+            with col1:
+                # Make MBC name clickable
+                if st.button(
+                    f"👤 {row['mbc_name']}", 
+                    key=f"mbc_{row['mbc_adult_id']}",
+                    help=f"Click to view scout assignments for {row['mbc_name']}"
+                ):
+                    st.session_state.selected_mbc = {
+                        'name': row['mbc_name'],
+                        'adult_id': row['mbc_adult_id'],
+                        'email': row['email']
+                    }
+                    st.rerun()
+                
+                st.caption(f"✉️ {row['email']}")
+            
+            with col2:
+                st.metric("Total", row['total_assignments'])
+            
+            with col3:
+                st.metric("Active", row['active_assignments'])
+            
+            with col4:
+                st.metric("Completed", row['completed_assignments'])
+            
+            with col5:
+                st.metric("Scouts", row['unique_scouts_assigned'])
+            
+            with col6:
+                merit_badges = str(row['merit_badges_counseling'])
+                if len(merit_badges) > 40:
+                    merit_badges = merit_badges[:40] + "..."
+                st.caption(f"Merit Badges: {merit_badges}")
+        
+        st.markdown("---")
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
