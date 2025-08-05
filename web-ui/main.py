@@ -1388,10 +1388,8 @@ elif page == "Manual MBC Matching":
             st.write(f"**Assignment Count:** {assignment_count}")
             st.write(f"**Merit Badges:** {unmatched_item.get('merit_badges', 'N/A')}")
             
-            # Show affected scouts (truncated)
+            # Show affected scouts (without truncation)
             scouts = unmatched_item.get('scouts', '')
-            if scouts and len(scouts) > 100:
-                scouts = scouts[:100] + "..."
             st.write(f"**Affected Scouts:** {scouts}")
         
         with col_matches:
@@ -1415,10 +1413,15 @@ elif page == "Manual MBC Matching":
                             st.write(f"{emoji} **{match['full_name']}**")
                             st.write(f"BSA #: {match.get('bsa_number', 'N/A')} | Email: {match.get('email', 'N/A')}")
                             if match.get('merit_badges'):
-                                mb_badges = match['merit_badges']
-                                if len(mb_badges) > 80:
-                                    mb_badges = mb_badges[:80] + "..."
-                                st.write(f"Merit Badges: {mb_badges}")
+                                # Display merit badges using text area for full content
+                                st.text_area(
+                                    "Merit Badges",
+                                    value=match['merit_badges'],
+                                    height=50,
+                                    key=f"match_mb_{mbc_name_raw}_{match['id']}",
+                                    disabled=True,
+                                    label_visibility="collapsed"
+                                )
                         
                         with match_col2:
                             st.write(f"**{confidence:.1%}**")
