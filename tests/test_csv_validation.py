@@ -274,6 +274,27 @@ class TestCSVValidator(unittest.TestCase):
         skipped_text = " ".join(result.skipped_records)
         self.assertIn("Skipped duplicate", skipped_text)
     
+    def test_mb_progress_raw_format_validation(self):
+        """Test validation of raw MB progress file with headers that need cleaning."""
+        from mb_progress_parser import MeritBadgeProgressParser
+        
+        # Test with raw format file (includes metadata headers)
+        csv_file = self.test_data_dir / "mb_progress_raw.csv"
+        
+        # Create a temporary output directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Parse and clean the file first
+            mb_parser = MeritBadgeProgressParser(str(csv_file), temp_dir)
+            cleaned_file = mb_parser._clean_csv()
+            
+            # Now validate the cleaned file
+            result = self.validator.validate_mb_progress(str(cleaned_file))
+            
+            self.assertTrue(result.is_valid, f"Valid cleaned MB progress should pass validation. Errors: {result.errors}")
+            self.assertEqual(len(result.errors), 0, "Valid cleaned MB progress should have no errors")
+            self.assertEqual(result.row_count, 4, "Should have 4 data rows after cleaning")
+            self.assertEqual(result.valid_rows, 4, "All 4 rows should be valid after cleaning")
+    
     def test_validation_report_generation(self):
         """Test generation of validation reports."""
         # Create some validation results

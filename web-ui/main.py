@@ -290,7 +290,11 @@ def run_validation_only(roster_file_path: Path) -> Tuple[bool, Dict[str, Validat
         mb_progress_path = data_dir / mb_progress_file
         
         if mb_progress_path.exists():
-            results["Merit Badge Progress"] = validator.validate_mb_progress(str(mb_progress_path))
+            # Parse and clean the MB progress file first (like we do with roster files)
+            from mb_progress_parser import MeritBadgeProgressParser
+            mb_parser = MeritBadgeProgressParser(str(mb_progress_path), "output")
+            cleaned_mb_file = mb_parser._clean_csv()  # Use the cleaning method directly
+            results["Merit Badge Progress"] = validator.validate_mb_progress(str(cleaned_mb_file))
         
         # Calculate overall validity
         overall_valid = all(result.is_valid for result in results.values())
