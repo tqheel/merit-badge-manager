@@ -239,6 +239,62 @@ class TestCSVValidator(unittest.TestCase):
         rank_errors = [e for e in result.errors if 'rank' in e.lower()]
         self.assertGreater(len(rank_errors), 0, "Invalid rank should cause validation error")
     
+    def test_mb_progress_valid(self):
+        """Test validation of valid merit badge progress data."""
+        csv_file = self.test_data_dir / "mb_progress_valid.csv"
+        result = self.validator.validate_mb_progress(str(csv_file))
+        
+        self.assertTrue(result.is_valid, f"Valid MB progress should pass validation. Errors: {result.errors}")
+        self.assertEqual(len(result.errors), 0, "Valid MB progress should have no errors")
+        self.assertEqual(result.row_count, 4, "Should have 4 data rows")
+        self.assertEqual(result.valid_rows, 4, "All 4 rows should be valid")
+    
+    def test_mb_progress_invalid(self):
+        """Test validation of invalid merit badge progress data."""
+        csv_file = self.test_data_dir / "mb_progress_invalid.csv"
+        result = self.validator.validate_mb_progress(str(csv_file))
+        
+        self.assertFalse(result.is_valid, "Invalid MB progress should fail validation")
+        self.assertGreater(len(result.errors), 0, "Invalid MB progress should have errors")
+        
+        # Check for specific validation errors
+        error_text = " ".join(result.errors)
+        self.assertIn("Member ID is required", error_text)
+        self.assertIn("Invalid Member ID format", error_text)
+        self.assertIn("Scout first name is required", error_text)
+        self.assertIn("Scout last name is required", error_text)
+        self.assertIn("Merit badge name is required", error_text)
+        self.assertIn("Invalid rank", error_text)
+        
+        # Check for warnings
+        warning_text = " ".join(result.warnings)
+        self.assertIn("Invalid date format", warning_text)
+        
+        # Check for skipped duplicate records
+        skipped_text = " ".join(result.skipped_records)
+        self.assertIn("Skipped duplicate", skipped_text)
+    
+    def test_mb_progress_raw_format_validation(self):
+        """Test validation of raw MB progress file with headers that need cleaning."""
+        from mb_progress_parser import MeritBadgeProgressParser
+        
+        # Test with raw format file (includes metadata headers)
+        csv_file = self.test_data_dir / "mb_progress_raw.csv"
+        
+        # Create a temporary output directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Parse and clean the file first
+            mb_parser = MeritBadgeProgressParser(str(csv_file), temp_dir)
+            cleaned_file = mb_parser._clean_csv()
+            
+            # Now validate the cleaned file
+            result = self.validator.validate_mb_progress(str(cleaned_file))
+            
+            self.assertTrue(result.is_valid, f"Valid cleaned MB progress should pass validation. Errors: {result.errors}")
+            self.assertEqual(len(result.errors), 0, "Valid cleaned MB progress should have no errors")
+            self.assertEqual(result.row_count, 4, "Should have 4 data rows after cleaning")
+            self.assertEqual(result.valid_rows, 4, "All 4 rows should be valid after cleaning")
+    
     def test_validation_report_generation(self):
         """Test generation of validation reports."""
         # Create some validation results

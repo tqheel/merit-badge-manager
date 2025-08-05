@@ -1,0 +1,6 @@
+Member ID,Scout First,Scout Last,MBC,Rank,Location,Merit Badge,Date Completed,Requirements
+,John,Smith,,Tenderfoot,"City, ST 12345",Fire Safety (2025),,5g 10 10a
+abc123,Jane,,Mike Johnson,Invalid Rank,"Town, ST 54321",Swimming (2024),,3 3c 4 4a 5 5b 7 7a 7b
+11111111,,Wilson,Robert Smith,Star,"Village, ST 98765",,,1 2 2a 3 (1 of 4a 4b 4c)
+22222222,Alice,Brown,,Life,"Hometown, ST 13579",Cooking (2024),invalid-date,No Requirements Complete
+22222222,Charlie,Davis,,Scout,"Duplicate, ST 24680",First Aid (2025),08/15/2024,1 2 3 4 5 6 7 8 9 10
