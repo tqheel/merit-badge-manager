@@ -211,7 +211,7 @@ WHERE
     OR date_of_birth IS NULL
     OR patrol_name IS NULL OR patrol_name = '';
 
--- View to show active scouts with current positions
+-- View to show normalized scout roster with current positions
 CREATE VIEW active_scouts_with_positions AS
 SELECT 
     s.first_name,
@@ -220,12 +220,11 @@ SELECT
     s.rank,
     s.patrol_name,
     s.unit_number,
-    s.activity_status,
+    COALESCE(s.activity_status, 'Unknown') as activity_status,
     sp.position_title,
     sp.tenure_info
 FROM scouts s
 LEFT JOIN scout_positions sp ON s.id = sp.scout_id AND sp.is_current = 1
-WHERE s.activity_status = 'Active'
 ORDER BY s.last_name, s.first_name;
 
 -- View to show merit badge progress summary
