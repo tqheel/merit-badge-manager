@@ -762,7 +762,6 @@ def display_scouts_roster_with_modal(df: pd.DataFrame):
         scout_id_query = """
         SELECT s.id, s.first_name, s.last_name, s.bsa_number
         FROM scouts s
-        WHERE s.activity_status = 'Active'
         """
         cursor = conn.cursor()
         cursor.execute(scout_id_query)
@@ -1198,7 +1197,7 @@ elif page == "Database Views":
             'current_positions': 'Current adult positions',
             'registered_volunteers': 'All adults with BSA numbers (registered volunteers) and their active roles',
             'scouts_missing_data': 'Scouts with missing required information',
-            'active_scouts_with_positions': 'Active scouts and their positions',
+            'active_scouts_with_positions': 'Scout roster with ranks and positions',
             'merit_badge_progress_summary': 'Merit badge progress overview',
             'scouts_needing_counselors': 'Scouts who need counselor assignments',
             'advancement_progress_by_rank': 'Advancement statistics by rank',
