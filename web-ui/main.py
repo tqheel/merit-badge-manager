@@ -486,7 +486,16 @@ def display_mbc_modal(mbc_name: str, mbc_adult_id: int):
                         st.info("In Progress")
                 
                 with col3:
-                    st.caption(f"Requirements: {mb['requirements'][:30]}{'...' if len(mb['requirements']) > 30 else ''}")
+                    # Display requirements with proper wrapping
+                    requirements_text = mb['requirements'] if mb['requirements'] else 'No requirements recorded'
+                    st.text_area(
+                        "Requirements",
+                        value=requirements_text,
+                        height=60,
+                        key=f"mbc_req_{scout_name}_{mb['name']}",
+                        disabled=True,
+                        label_visibility="collapsed"
+                    )
     
     # Close button
     st.markdown("---")
@@ -568,9 +577,15 @@ def display_scout_mbc_modal(scout_name: str, scout_id: int, scout_bsa_number: in
             # All Merit Badges this MBC counsels
             st.write("**All Merit Badges Counseled:**")
             mb_badges = mbc_data['workload']['merit_badges_counseling']
-            if len(mb_badges) > 100:
-                mb_badges = mb_badges[:100] + "..."
-            st.caption(mb_badges)
+            # Use text area for better display of long text
+            st.text_area(
+                "Merit Badges",
+                value=mb_badges,
+                height=80,
+                key=f"mb_counseled_{mbc_data['mbc_info']['adult_id']}",
+                disabled=True,
+                label_visibility="collapsed"
+            )
             
             st.markdown("---")
             
@@ -591,10 +606,16 @@ def display_scout_mbc_modal(scout_name: str, scout_id: int, scout_bsa_number: in
                         st.info("In Progress")
                 
                 with mb_col3:
-                    requirements_text = mb['requirements'][:50] if mb['requirements'] else 'No requirements recorded'
-                    if len(mb['requirements']) > 50:
-                        requirements_text += "..."
-                    st.caption(f"Requirements: {requirements_text}")
+                    # Display requirements with proper wrapping
+                    requirements_text = mb['requirements'] if mb['requirements'] else 'No requirements recorded'
+                    st.text_area(
+                        "Requirements",
+                        value=requirements_text,
+                        height=60,
+                        key=f"req_{mbc_data['mbc_info']['adult_id']}_{mb['name']}",
+                        disabled=True,
+                        label_visibility="collapsed"
+                    )
     
     # Close button
     st.markdown("---")
@@ -668,7 +689,8 @@ def display_view_data(view_name: str):
         elif view_name == 'active_scouts_with_positions':
             display_scouts_roster_with_modal(df)
         else:
-            st.dataframe(df, use_container_width=True)
+            # Configure dataframe for text wrapping
+            display_dataframe_with_text_wrapping(df)
         
         # Display record count
         st.info(f"Total records: {len(df)}")
@@ -677,6 +699,33 @@ def display_view_data(view_name: str):
         st.error(f"Error loading view {view_name}: {e}")
     finally:
         conn.close()
+
+def display_dataframe_with_text_wrapping(df: pd.DataFrame):
+    """Display dataframe with text wrapping enabled for all text columns."""
+    if df.empty:
+        st.info("No data to display")
+        return
+    
+    # Create column configuration for text wrapping
+    column_config = {}
+    
+    for col in df.columns:
+        # Configure all columns to enable text wrapping
+        column_config[col] = st.column_config.TextColumn(
+            col,
+            help=f"Content for {col}",
+            width="medium",
+            max_chars=None,  # No character limit
+        )
+    
+    # Display the dataframe with text wrapping configuration
+    st.dataframe(
+        df,
+        use_container_width=True,
+        column_config=column_config,
+        hide_index=True,
+        height=None,  # Auto-height to accommodate wrapped text
+    )
 
 def display_mbc_workload_with_modal(df: pd.DataFrame):
     """Display MBC workload summary with clickable MBC names that open modal dialogs."""
@@ -728,10 +777,17 @@ def display_mbc_workload_with_modal(df: pd.DataFrame):
                 st.metric("Scouts", row['unique_scouts_assigned'])
             
             with col6:
+                # Display merit badges with wrapping
                 merit_badges = str(row['merit_badges_counseling'])
-                if len(merit_badges) > 40:
-                    merit_badges = merit_badges[:40] + "..."
-                st.caption(f"Merit Badges: {merit_badges}")
+                # Use text area for better wrapping of long text
+                st.text_area(
+                    "Merit Badges", 
+                    value=merit_badges,
+                    height=60,
+                    key=f"mb_text_{row['mbc_adult_id']}",
+                    disabled=True,
+                    label_visibility="collapsed"
+                )
         
         st.markdown("---")
 
