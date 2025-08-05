@@ -85,6 +85,15 @@ class CSVValidator:
     # Valid activity status values
     VALID_ACTIVITY_STATUS = ['Active', 'Inactive', 'Aged Out', '']
     
+    # Merit Badge Progress expected columns (based on import structure)
+    MB_PROGRESS_REQUIRED_COLUMNS = [
+        'member_id', 'scout_first', 'scout_last', 'merit_badge'
+    ]
+    
+    MB_PROGRESS_OPTIONAL_COLUMNS = [
+        'mbc', 'rank', 'location', 'date_completed', 'requirements'
+    ]
+    
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
@@ -124,13 +133,33 @@ class CSVValidator:
             self._validate_youth_row
         )
     
+    def validate_mb_progress(self, csv_file_path: str) -> ValidationResult:
+        """
+        Validate merit badge progress CSV file against expected schema.
+        
+        Args:
+            csv_file_path: Path to the merit badge progress CSV file
+            
+        Returns:
+            ValidationResult with validation details
+        """
+        return self._validate_csv_file(
+            csv_file_path,
+            "Merit Badge Progress",
+            self.MB_PROGRESS_REQUIRED_COLUMNS,
+            self.MB_PROGRESS_OPTIONAL_COLUMNS,
+            self._validate_mb_progress_row,
+            id_field='member_id'
+        )
+    
     def _validate_csv_file(
         self, 
         csv_file_path: str, 
         file_type: str,
         required_columns: List[str],
         optional_columns: List[str],
-        row_validator
+        row_validator,
+        id_field: str = 'bsa_number'
     ) -> ValidationResult:
         """
         Generic CSV file validation.
@@ -184,21 +213,32 @@ class CSVValidator:
                     row_number += 1
                     result.row_count += 1
                     
-                    # Check for duplicate BSA numbers
-                    bsa_number = self._get_normalized_value(row, 'bsa_number')
+                    # Check for duplicate IDs (BSA numbers or Member IDs)
+                    id_value = self._get_normalized_value(row, id_field)
                     first_name = self._get_normalized_value(row, 'first_name')
                     last_name = self._get_normalized_value(row, 'last_name')
                     
-                    if bsa_number and bsa_number in bsa_numbers_seen:
+                    # For MB Progress files, use scout first/last name instead of first/last name
+                    if id_field == 'member_id':
+                        first_name = self._get_normalized_value(row, 'scout_first')
+                        last_name = self._get_normalized_value(row, 'scout_last')
+                    
+                    if id_value and id_value in bsa_numbers_seen:
                         # Skip duplicate record and report it
-                        first_occurrence = bsa_numbers_seen[bsa_number]
+                        first_occurrence = bsa_numbers_seen[id_value]
+                        id_label = id_field.replace('_', ' ')
+                        if id_field == 'bsa_number':
+                            id_label = 'BSA number'  # Keep original case for backward compatibility
+                        elif id_field == 'member_id':
+                            id_label = 'Member ID'
+                        
                         result.add_skipped_record(
-                            f"Row {row_number}: Skipped duplicate BSA number '{bsa_number}' for {first_name} {last_name} "
+                            f"Row {row_number}: Skipped duplicate {id_label} '{id_value}' for {first_name} {last_name} "
                             f"(first occurrence: Row {first_occurrence['row']}, {first_occurrence['name']})"
                         )
                         continue
-                    elif bsa_number:
-                        bsa_numbers_seen[bsa_number] = {
+                    elif id_value:
+                        bsa_numbers_seen[id_value] = {
                             'row': row_number,
                             'name': f"{first_name} {last_name}"
                         }
@@ -365,6 +405,46 @@ class CSVValidator:
         phone = self._get_normalized_value(row, 'phone')
         if phone and not self._is_valid_phone(phone):
             result.add_warning(f"Row {row_number}: Phone number format may be invalid '{phone}'")
+        
+        return result
+    
+    def _validate_mb_progress_row(self, row: Dict[str, str], row_number: int) -> ValidationResult:
+        """Validate individual merit badge progress row."""
+        result = ValidationResult()
+        
+        # Validate required fields using normalized lookups
+        member_id = self._get_normalized_value(row, 'member_id')
+        scout_first = self._get_normalized_value(row, 'scout_first')
+        scout_last = self._get_normalized_value(row, 'scout_last')
+        merit_badge = self._get_normalized_value(row, 'merit_badge')
+        
+        if not member_id:
+            result.add_error(f"Row {row_number}: Member ID is required")
+        elif not self._is_valid_bsa_number(member_id):
+            result.add_error(f"Row {row_number}: Invalid Member ID format '{member_id}'")
+        
+        if not scout_first:
+            result.add_error(f"Row {row_number}: Scout first name is required")
+        
+        if not scout_last:
+            result.add_error(f"Row {row_number}: Scout last name is required")
+        
+        if not merit_badge:
+            result.add_error(f"Row {row_number}: Merit badge name is required")
+        
+        # Validate optional rank field if provided
+        rank = self._get_normalized_value(row, 'rank')
+        if rank and rank not in self.VALID_YOUTH_RANKS:
+            result.add_error(f"Row {row_number}: Invalid rank '{rank}'. Valid ranks: {', '.join(self.VALID_YOUTH_RANKS)}")
+        
+        # Validate date completed if provided
+        date_completed = self._get_normalized_value(row, 'date_completed')
+        if date_completed and not self._is_valid_date(date_completed):
+            result.add_warning(f"Row {row_number}: Invalid date format for date_completed '{date_completed}'")
+        
+        # MBC field can be empty (no counselor assigned yet) so no validation needed
+        # Requirements field can contain any text format so no specific validation needed
+        # Location field can be any text format so no specific validation needed
         
         return result
     

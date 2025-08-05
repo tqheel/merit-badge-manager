@@ -263,7 +263,7 @@ def display_validation_results(results: Dict[str, ValidationResult]) -> bool:
 
 def run_validation_only(roster_file_path: Path) -> Tuple[bool, Dict[str, ValidationResult]]:
     """
-    Run validation on roster files and return results.
+    Run validation on roster files and merit badge progress file and return results.
     
     Returns:
         Tuple of (overall_valid, results_dict)
@@ -282,6 +282,15 @@ def run_validation_only(roster_file_path: Path) -> Tuple[bool, Dict[str, Validat
         
         if os.path.exists(youth_file):
             results["Youth Roster"] = validator.validate_youth_roster(youth_file)
+        
+        # Also validate Merit Badge Progress file if it exists
+        current_env = load_env_file()
+        mb_progress_file = current_env.get('MB_PROGRESS_CSV_FILE', 'merit_badge_progress.csv')
+        data_dir = Path("data")
+        mb_progress_path = data_dir / mb_progress_file
+        
+        if mb_progress_path.exists():
+            results["Merit Badge Progress"] = validator.validate_mb_progress(str(mb_progress_path))
         
         # Calculate overall validity
         overall_valid = all(result.is_valid for result in results.values())
