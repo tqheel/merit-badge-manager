@@ -710,12 +710,28 @@ def display_dataframe_with_text_wrapping(df: pd.DataFrame):
     column_config = {}
     
     for col in df.columns:
-        # Configure all columns to enable text wrapping
+        # Check if this column contains long text content
+        max_text_length = 0
+        if not df[col].empty:
+            max_text_length = df[col].astype(str).str.len().max()
+        
+        # Determine appropriate width based on content and column name
+        if col.lower() in ['counselors', 'merit_badges_counseling', 'requirements', 'requirements_raw'] or max_text_length > 100:
+            # Use large width for columns known to contain long concatenated text
+            width = "large"
+        elif max_text_length > 50:
+            # Use medium width for moderately long text
+            width = "medium"
+        else:
+            # Use small width for short text
+            width = "small"
+        
+        # Configure column with appropriate text wrapping
         column_config[col] = st.column_config.TextColumn(
             col,
             help=f"Content for {col}",
-            width="medium",
-            max_chars=None,  # No character limit
+            width=width,
+            max_chars=None,  # No character limit to prevent truncation
         )
     
     # Display the dataframe with text wrapping configuration
