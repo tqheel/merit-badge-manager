@@ -79,10 +79,10 @@ class TestManualMBCMatchingUI:
         expect(page.locator("text=Merit Badge Manager")).to_be_visible()
         
         # Check that Manual MBC Matching option is available in navigation
-        expect(page.locator("text=Manual MBC Matching")).to_be_visible()
+        expect(page.locator('a[href*="4_Manual_MBC_Matching"]')).to_be_visible()
         
         # Click on Manual MBC Matching
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Verify we're on the correct page
         expect(page.locator("h2:has-text('Manual MBC Matching')")).to_be_visible()
@@ -91,7 +91,7 @@ class TestManualMBCMatchingUI:
     def test_statistics_dashboard_display(self, page: Page):
         """Test the statistics dashboard displays correctly."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Wait for statistics to load
         expect(page.locator("h3:has-text('Matching Progress')")).to_be_visible()
@@ -118,7 +118,7 @@ class TestManualMBCMatchingUI:
     def test_manual_matching_interface_elements(self, page: Page):
         """Test the manual matching interface elements are present."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Wait for interface to load
         expect(page.locator("h3:has-text('Manual Matching Interface')")).to_be_visible()
@@ -137,7 +137,7 @@ class TestManualMBCMatchingUI:
     def test_unmatched_name_details_display(self, page: Page):
         """Test that unmatched name details are displayed correctly."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Wait for content to load
         expect(page.locator("h3:has-text('Manual Matching Interface')")).to_be_visible()
@@ -151,7 +151,7 @@ class TestManualMBCMatchingUI:
     def test_potential_matches_with_confidence(self, page: Page):
         """Test that potential matches are shown with confidence indicators."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Wait for matches to load
         expect(page.locator("text=Potential Adult Matches:")).to_be_visible()
@@ -175,7 +175,7 @@ class TestManualMBCMatchingUI:
     def test_action_buttons_presence(self, page: Page):
         """Test that all action buttons are present for each unmatched name."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Wait for interface to load
         expect(page.locator("text=Actions:")).to_be_visible()
@@ -189,7 +189,7 @@ class TestManualMBCMatchingUI:
     def test_user_name_input_functionality(self, page: Page):
         """Test the user name input functionality."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Find and interact with user name input
         user_input = page.locator("input[aria-label='Your Name']")
@@ -206,7 +206,7 @@ class TestManualMBCMatchingUI:
     def test_filter_dropdown_functionality(self, page: Page):
         """Test the filter dropdown functionality."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Find filter dropdown
         expect(page.locator("text=Filter by:")).to_be_visible()
@@ -230,7 +230,7 @@ class TestManualMBCMatchingUI:
     def test_match_action_workflow(self, page: Page):
         """Test the match action workflow (without actually clicking due to state changes)."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Wait for interface to load
         expect(page.locator("text=Actions:")).to_be_visible()
@@ -246,7 +246,7 @@ class TestManualMBCMatchingUI:
     def test_responsive_layout(self, page: Page):
         """Test that the layout works on different screen sizes."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Test desktop layout
         page.set_viewport_size({"width": 1200, "height": 800})
@@ -263,7 +263,7 @@ class TestManualMBCMatchingUI:
     def test_statistics_update_structure(self, page: Page):
         """Test that statistics have the correct structure and formatting."""
         page.goto("http://localhost:8501")
-        page.click("text=Manual MBC Matching")
+        page.locator('[data-testid="stSidebarNav"] a:has-text("Manual MBC Matching")').first.click()
         
         # Wait for statistics to load
         expect(page.locator("h3:has-text('Matching Progress')")).to_be_visible()
@@ -290,6 +290,18 @@ class TestManualMBCMatchingUI:
         try:
             page.goto("http://localhost:8501")
             page.click("text=Manual MBC Matching")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
             
             # Should show completion message
             expect(page.locator("text=All MBC names have been resolved!")).to_be_visible(timeout=10000)
@@ -321,6 +333,18 @@ class TestManualMBCMatchingUI:
         try:
             page.goto("http://localhost:8501")
             page.click("text=Manual MBC Matching")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
             
             # Wait for interface to load
             expect(page.locator("h3:has-text('Manual Matching Interface')")).to_be_visible()
@@ -351,6 +375,18 @@ class TestManualMBCMatchingUI:
         try:
             page.goto("http://localhost:8501")
             page.click("text=Manual MBC Matching")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("networkidle")
             
             # Should show database not found warning
             expect(page.locator("text=Database not found")).to_be_visible()

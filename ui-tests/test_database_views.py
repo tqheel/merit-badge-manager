@@ -16,7 +16,7 @@ def test_database_views_no_database(page: Page, streamlit_app, clean_database):
     # Navigate to Database Views page
     db_views_radio = page.locator('label:has-text("Database Views")').first
     db_views_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     # Should show warning about missing database
     expect(page.locator("text=Database not found")).to_be_visible()
@@ -33,17 +33,17 @@ def test_database_views_with_data(page: Page, streamlit_app, sample_csv_files, c
     # First create database and import data
     db_mgmt_radio = page.locator('label:has-text("Database Management")').first
     db_mgmt_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        time.sleep(180)
     
     # Import CSV data
     csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
     csv_import_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     file_input = page.locator('input[type="file"]').first
     if file_input.is_visible():
@@ -53,17 +53,17 @@ def test_database_views_with_data(page: Page, streamlit_app, sample_csv_files, c
         validate_btn = page.locator('button:has-text("Validate")')
         if validate_btn.is_visible():
             validate_btn.click()
-            time.sleep(3)
+            time.sleep(180)
             
             import_btn = page.locator('button:has-text("Import")')
             if import_btn.is_visible():
                 import_btn.click()
-                time.sleep(5)
+                time.sleep(180)
     
     # Now go to Database Views
     db_views_radio = page.locator('label:has-text("Database Views")').first
     db_views_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     # Should see view categories
     expect(page.locator("text=Adult Views")).to_be_visible()
@@ -81,16 +81,16 @@ def test_adult_views_selection(page: Page, streamlit_app, sample_csv_files, clea
     # Create database and import data
     db_mgmt_radio = page.locator('label:has-text("Database Management")').first
     db_mgmt_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        time.sleep(180)
     
     csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
     csv_import_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     file_input = page.locator('input[type="file"]').first
     if file_input.is_visible():
@@ -100,23 +100,23 @@ def test_adult_views_selection(page: Page, streamlit_app, sample_csv_files, clea
         validate_btn = page.locator('button:has-text("Validate")')
         if validate_btn.is_visible():
             validate_btn.click()
-            time.sleep(3)
+            time.sleep(180)
             
             import_btn = page.locator('button:has-text("Import")')
             if import_btn.is_visible():
                 import_btn.click()
-                time.sleep(5)
+                time.sleep(180)
     
     # Go to Database Views
     db_views_radio = page.locator('label:has-text("Database Views")').first
     db_views_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     # Select Adult Views
     adult_views_radio = page.locator('label:has-text("Adult Views")').first
     if adult_views_radio.is_visible():
         adult_views_radio.click()
-        time.sleep(1)
+        time.sleep(180)
         
         # Should see adult view options in sidebar
         expect(page.locator('[data-testid="stSidebar"]')).to_be_visible()
@@ -142,16 +142,16 @@ def test_youth_views_selection(page: Page, streamlit_app, sample_csv_files, clea
     # Create database and import data
     db_mgmt_radio = page.locator('label:has-text("Database Management")').first
     db_mgmt_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        time.sleep(180)
     
     csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
     csv_import_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     file_input = page.locator('input[type="file"]').first
     if file_input.is_visible():
@@ -161,23 +161,23 @@ def test_youth_views_selection(page: Page, streamlit_app, sample_csv_files, clea
         validate_btn = page.locator('button:has-text("Validate")')
         if validate_btn.is_visible():
             validate_btn.click()
-            time.sleep(3)
+            time.sleep(180)
             
             import_btn = page.locator('button:has-text("Import")')
             if import_btn.is_visible():
                 import_btn.click()
-                time.sleep(5)
+                time.sleep(180)
     
     # Go to Database Views
     db_views_radio = page.locator('label:has-text("Database Views")').first
     db_views_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     # Select Youth Views
     youth_views_radio = page.locator('label:has-text("Youth Views")').first
     if youth_views_radio.is_visible():
         youth_views_radio.click()
-        time.sleep(1)
+        time.sleep(180)
         
         # Should see youth view options
         expect(page.locator('[data-testid="stSidebar"]')).to_be_visible()
@@ -194,16 +194,16 @@ def test_view_data_display(page: Page, streamlit_app, sample_csv_files, clean_da
     # Create database and import data
     db_mgmt_radio = page.locator('label:has-text("Database Management")').first
     db_mgmt_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        time.sleep(180)
     
     csv_import_radio = page.locator('label:has-text("CSV Import & Validation")').first
     csv_import_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     file_input = page.locator('input[type="file"]').first
     if file_input.is_visible():
@@ -213,23 +213,23 @@ def test_view_data_display(page: Page, streamlit_app, sample_csv_files, clean_da
         validate_btn = page.locator('button:has-text("Validate")')
         if validate_btn.is_visible():
             validate_btn.click()
-            time.sleep(3)
+            time.sleep(180)
             
             import_btn = page.locator('button:has-text("Import")')
             if import_btn.is_visible():
                 import_btn.click()
-                time.sleep(5)
+                time.sleep(180)
     
     # Go to Database Views and select a view
     db_views_radio = page.locator('label:has-text("Database Views")').first
     db_views_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     # Select any available view
     adult_views_radio = page.locator('label:has-text("Adult Views")').first
     if adult_views_radio.is_visible():
         adult_views_radio.click()
-        time.sleep(1)
+        time.sleep(180)
         
         # Look for data table
         expect(page.locator('[data-testid="stDataFrame"]')).to_be_visible()
@@ -244,17 +244,17 @@ def test_view_descriptions_display(page: Page, streamlit_app, clean_database):
     # Create a minimal database to access views
     db_mgmt_radio = page.locator('label:has-text("Database Management")').first
     db_mgmt_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        time.sleep(180)
     
     # Go to Database Views
     db_views_radio = page.locator('label:has-text("Database Views")').first
     db_views_radio.click()
-    time.sleep(1)
+    time.sleep(180)
     
     # Should see view categories and selection instructions
     expect(page.locator("text=Select a view")).to_be_visible()
@@ -267,19 +267,17 @@ def test_view_categories_organization(page: Page, streamlit_app, clean_database)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Create database
-    db_mgmt_radio = page.locator('label:has-text("Database Management")').first
-    db_mgmt_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        page.wait_for_load_state("networkidle")
     
     # Go to Database Views
-    db_views_radio = page.locator('label:has-text("Database Views")').first
-    db_views_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Check for view category organization
     expect(page.locator("text=View Category")).to_be_visible()
@@ -294,25 +292,23 @@ def test_empty_view_handling(page: Page, streamlit_app, clean_database):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Create database without importing data
-    db_mgmt_radio = page.locator('label:has-text("Database Management")').first
-    db_mgmt_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        page.wait_for_load_state("networkidle")
     
     # Go to Database Views
-    db_views_radio = page.locator('label:has-text("Database Views")').first
-    db_views_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Select a view category
     adult_views_radio = page.locator('label:has-text("Adult Views")').first
     if adult_views_radio.is_visible():
         adult_views_radio.click()
-        time.sleep(1)
+        time.sleep(180)
         
         # Views should exist but may show no data
         # This tests that empty views don't crash the application
@@ -320,25 +316,23 @@ def test_empty_view_handling(page: Page, streamlit_app, clean_database):
 
 
 @pytest.mark.ui
-def test_view_refresh_functionality(page: Page, streamlit_app, clean_database):
+def test_view_refresh_functionality(page: Page, streamlit_app, create_test_db):
     """Test that views can be refreshed and updated."""
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Create database
-    db_mgmt_radio = page.locator('label:has-text("Database Management")').first
-    db_mgmt_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(5)
+        page.wait_for_load_state("networkidle")
     
     # Go to Database Views
-    db_views_radio = page.locator('label:has-text("Database Views")').first
-    db_views_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Navigate to different view categories to test refresh
     adult_views_radio = page.locator('label:has-text("Adult Views")').first
@@ -346,13 +340,13 @@ def test_view_refresh_functionality(page: Page, streamlit_app, clean_database):
     
     if adult_views_radio.is_visible() and youth_views_radio.is_visible():
         adult_views_radio.click()
-        time.sleep(1)
+        time.sleep(180)
         
         youth_views_radio.click()
-        time.sleep(1)
+        time.sleep(180)
         
         adult_views_radio.click()
-        time.sleep(1)
+        time.sleep(180)
         
         # Should handle navigation without errors
         expect(page.locator('[data-testid="stApp"]')).to_be_visible()

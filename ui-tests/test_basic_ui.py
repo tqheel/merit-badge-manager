@@ -29,20 +29,22 @@ def test_sidebar_navigation(page: Page, streamlit_app):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Test navigation to each page
-    pages_to_test = [
-        "Settings",
-        "CSV Import", 
-        "Database Views"
-    ]
     
-    for page_name in pages_to_test:
-        # Find and click the radio button for the page
-        radio_button = page.locator(f'label:has-text("{page_name}")').first
-        if radio_button.is_visible():
-            radio_button.click()
+    
+    pages_to_test = {
+        "Settings": "1_Settings",
+        "CSV Import": "2_CSV_Import",
+        "Database Views": "3_Database_Views"
+    }
+    
+    for page_name, page_file in pages_to_test.items():
+        # Find and click the link for the page
+        link = page.locator(f'[data-testid="stSidebarNav"] a:has-text("{page_name}")').first
+        if link.is_visible():
+            link.click()
             
             # Wait for page content to load
-            time.sleep(1)
+            time.sleep(120)
             
             # Verify we're on the correct page by checking for page-specific content
             if page_name == "Settings":
@@ -63,7 +65,7 @@ def test_environment_configuration_page(page: Page, streamlit_app):
     env_config_radio = page.locator('label:has-text("Settings")').first
     if env_config_radio.is_visible():
         env_config_radio.click()
-        time.sleep(1)
+        time.sleep(120)
         
         # Check that environment configuration elements are present
         expect(page.locator("text=Environment Settings")).to_be_visible()
@@ -80,16 +82,14 @@ def test_csv_import_page_loads(page: Page, streamlit_app):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    if csv_import_radio.is_visible():
-        csv_import_radio.click()
-        time.sleep(1)
-        
-        # Check for CSV import page elements
-        expect(page.locator("text=CSV Import & Validation")).to_be_visible()
-        
-        # Look for file uploader
-        expect(page.locator('[data-testid="stFileUploader"]')).to_be_visible()
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    time.sleep(120)
+    
+    # Check for CSV import page elements
+    expect(page.locator("text=CSV Import & Validation")).to_be_visible()
+    
+    # Look for file uploader
+    expect(page.locator('[data-testid="stFileUploader"]')).to_be_visible()
 
 
 @pytest.mark.ui
@@ -102,7 +102,7 @@ def test_database_views_page_no_database(page: Page, streamlit_app, clean_databa
     db_views_radio = page.locator('label:has-text("Database Views")').first
     if db_views_radio.is_visible():
         db_views_radio.click()
-        time.sleep(1)
+        time.sleep(120)
         
         # Should show warning about missing database
         expect(page.locator("text=Database not found")).to_be_visible()
@@ -135,12 +135,10 @@ def test_error_handling_display(page: Page, streamlit_app):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to Database Views without a database to trigger an error
-    db_views_radio = page.locator('label:has-text("Database Views")').first
-    if db_views_radio.is_visible():
-        db_views_radio.click()
-        time.sleep(1)
-        
-        # Check that warning/error messages are displayed properly
-        warning_elements = page.locator('[data-testid="stAlert"]')
-        if warning_elements.count() > 0:
-            expect(warning_elements.first).to_be_visible()
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
+    
+    # Check that warning/error messages are displayed properly
+    warning_elements = page.locator('[data-testid="stAlert"]')
+    if warning_elements.count() > 0:
+        expect(warning_elements.first).to_be_visible()

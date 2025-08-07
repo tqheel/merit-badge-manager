@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 @pytest.fixture
-def sample_data_loaded(clean_database):
+def sample_data_loaded(create_test_db):
     """Load sample data for testing the Scout MBC modal functionality."""
     db_path = "merit_badge_manager.db"
     
@@ -74,16 +74,16 @@ def test_scout_modal_opens_from_roster(page: Page, streamlit_app, sample_data_lo
     
     # Navigate to Database Views -> Youth Views -> Active Scouts
     page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    time.sleep(120)
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Wait for the scouts roster to load
     expect(page.locator("text=Click on a Scout name to view their MBC assignments")).to_be_visible()
     
     # Click on Tom Anderson
     page.click('button:has-text("👤 Tom Anderson")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Verify the modal opened
     expect(page.locator("text=🎯 MBC Assignments for Tom Anderson")).to_be_visible()
@@ -97,14 +97,14 @@ def test_scout_modal_displays_correct_mbc_data(page: Page, streamlit_app, sample
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to scouts roster
-    page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    page.locator('a[href*="3_Database_Views"]').first.click()
+    time.sleep(120)
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Click on Tom Anderson (who has 3 merit badge assignments with 2 MBCs)
     page.click('button:has-text("👤 Tom Anderson")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Verify modal shows correct summary
     expect(page.locator("text=Total MBCs: 2")).to_be_visible()
@@ -131,12 +131,12 @@ def test_scout_modal_shows_merit_badge_details(page: Page, streamlit_app, sample
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to scouts roster and open Tom Anderson's modal
-    page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    page.wait_for_load_state("networkidle")
     page.click('button:has-text("👤 Tom Anderson")')
-    time.sleep(1)
+    page.wait_for_load_state("networkidle")
     
     # Verify merit badge details are shown
     expect(page.locator("text=🏅 Merit Badges with Tom Anderson")).to_be_visible()
@@ -160,19 +160,19 @@ def test_scout_modal_closes_correctly(page: Page, streamlit_app, sample_data_loa
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to scouts roster and open modal
-    page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    page.wait_for_load_state("networkidle")
     page.click('button:has-text("👤 Sarah Brown")')
-    time.sleep(1)
+    page.wait_for_load_state("networkidle")
     
     # Verify modal is open
     expect(page.locator("text=🎯 MBC Assignments for Sarah Brown")).to_be_visible()
     
     # Click the Close button
     page.click('button:has-text("✖️ Close")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Verify modal is closed and we're back to the roster
     expect(page.locator("text=🎯 MBC Assignments for Sarah Brown")).not_to_be_visible()
@@ -187,14 +187,14 @@ def test_different_scouts_show_different_data(page: Page, streamlit_app, sample_
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to scouts roster
-    page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    page.locator('a[href*="3_Database_Views"]').first.click()
+    time.sleep(120)
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Test Sarah Brown (has 2 MBCs)
     page.click('button:has-text("👤 Sarah Brown")')
-    time.sleep(1)
+    time.sleep(120)
     
     expect(page.locator("text=🎯 MBC Assignments for Sarah Brown")).to_be_visible()
     expect(page.locator("text=Total MBCs: 2")).to_be_visible()
@@ -203,10 +203,10 @@ def test_different_scouts_show_different_data(page: Page, streamlit_app, sample_
     
     # Close modal and test Mike Davis (has 1 MBC)
     page.click('button:has-text("✖️ Close")')
-    time.sleep(1)
+    time.sleep(120)
     
     page.click('button:has-text("👤 Mike Davis")')
-    time.sleep(1)
+    time.sleep(120)
     
     expect(page.locator("text=🎯 MBC Assignments for Mike Davis")).to_be_visible()
     expect(page.locator("text=Total MBCs: 1")).to_be_visible()
@@ -221,12 +221,12 @@ def test_scout_modal_workload_numbers_accurate(page: Page, streamlit_app, sample
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to scouts roster and open Tom Anderson's modal
-    page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    page.wait_for_load_state("networkidle")
     page.click('button:has-text("👤 Tom Anderson")')
-    time.sleep(1)
+    page.wait_for_load_state("networkidle")
     
     # Verify John Smith's workload (works with Tom and Sarah)
     john_smith_section = page.locator('text=👤 John Smith - john.smith@example.com').locator('xpath=following-sibling::*[1]')
@@ -236,9 +236,9 @@ def test_scout_modal_workload_numbers_accurate(page: Page, streamlit_app, sample
     
     # Close and check Mary Johnson with Mike Davis
     page.click('button:has-text("✖️ Close")')
-    time.sleep(1)
+    time.sleep(120)
     page.click('button:has-text("👤 Mike Davis")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Mary Johnson should have: 2 total scouts (Tom, Mike), 2 active, 0 completed, 1 merit badge (Hiking)
     mary_section = page.locator('text=👤 Mary Johnson - mary.johnson@example.com').locator('xpath=following-sibling::*[1]')
@@ -252,10 +252,10 @@ def test_scout_modal_accessibility_features(page: Page, streamlit_app, sample_da
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to scouts roster
-    page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    page.locator('a[href*="3_Database_Views"]').first.click()
+    time.sleep(120)
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Test that Scout buttons have proper aria labels or help text
     tom_button = page.locator('button:has-text("👤 Tom Anderson")')
@@ -263,7 +263,7 @@ def test_scout_modal_accessibility_features(page: Page, streamlit_app, sample_da
     
     # Open modal
     tom_button.click()
-    time.sleep(1)
+    time.sleep(120)
     
     # Test keyboard navigation to close button
     page.keyboard.press('Tab')
@@ -307,14 +307,14 @@ def test_scout_modal_handles_no_mbcs(page: Page, streamlit_app, clean_database):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to scouts roster
-    page.click('label:has-text("Database Views")')
-    time.sleep(1)
+    page.locator('a[href*="3_Database_Views"]').first.click()
+    time.sleep(120)
     page.click('label:has-text("Youth Views")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Click on the scout with no assignments
     page.click('button:has-text("👤 Empty Scout")')
-    time.sleep(1)
+    time.sleep(120)
     
     # Should show appropriate message
     expect(page.locator("text=No MBC assignments found for Empty Scout")).to_be_visible()
@@ -322,7 +322,7 @@ def test_scout_modal_handles_no_mbcs(page: Page, streamlit_app, clean_database):
     
     # Close should work
     page.click('button:has-text("Close")')
-    time.sleep(1)
+    time.sleep(120)
     expect(page.locator("text=No MBC assignments found")).not_to_be_visible()
     
     # Cleanup

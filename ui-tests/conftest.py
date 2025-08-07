@@ -72,6 +72,19 @@ def clean_database():
 
 
 @pytest.fixture
+def create_test_db():
+    """Create a test database."""
+    from database.setup_database import create_database_schema
+    db_path = "merit_badge_manager.db"
+    if Path(db_path).exists():
+        Path(db_path).unlink()
+    create_database_schema(db_path, include_youth=True)
+    yield
+    if Path(db_path).exists():
+        Path(db_path).unlink()
+
+
+@pytest.fixture
 def sample_csv_files(tmp_path):
     """Create sample CSV files for testing."""
     # Create sample adult roster CSV

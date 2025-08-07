@@ -14,7 +14,12 @@ from pathlib import Path
 # Add the web-ui directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "web-ui"))
 
-from main import get_scout_assignments_for_mbc
+# Import the module and functions from the correct location
+import importlib.util
+spec = importlib.util.spec_from_file_location("database_views", Path(__file__).parent.parent / "web-ui" / "pages" / "3_Database_Views.py")
+database_views = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(database_views)
+get_scout_assignments_for_mbc = database_views.get_scout_assignments_for_mbc
 
 
 class TestMBCModalFeature:
@@ -82,9 +87,8 @@ class TestMBCModalFeature:
         def mock_get_database_connection():
             return sqlite3.connect(test_db_path)
         
-        # Patch the database connection in the main module
-        import main
-        monkeypatch.setattr(main, 'get_database_connection', mock_get_database_connection)
+        # Patch the database connection in the database_views module
+        monkeypatch.setattr(database_views, 'get_database_connection', mock_get_database_connection)
         
         # Test getting assignments for MBC with ID 1
         assignments = get_scout_assignments_for_mbc(1)
@@ -116,9 +120,8 @@ class TestMBCModalFeature:
         def mock_get_database_connection():
             return sqlite3.connect(test_db_path)
         
-        # Patch the database connection in the main module
-        import main
-        monkeypatch.setattr(main, 'get_database_connection', mock_get_database_connection)
+        # Patch the database connection in the database_views module
+        monkeypatch.setattr(database_views, 'get_database_connection', mock_get_database_connection)
         
         # Test getting assignments for non-existent MBC
         assignments = get_scout_assignments_for_mbc(999)
@@ -132,9 +135,8 @@ class TestMBCModalFeature:
         def mock_get_database_connection():
             return sqlite3.connect(test_db_path)
         
-        # Patch the database connection in the main module
-        import main
-        monkeypatch.setattr(main, 'get_database_connection', mock_get_database_connection)
+        # Patch the database connection in the database_views module
+        monkeypatch.setattr(database_views, 'get_database_connection', mock_get_database_connection)
         
         assignments = get_scout_assignments_for_mbc(1)
         

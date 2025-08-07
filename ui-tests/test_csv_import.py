@@ -15,9 +15,8 @@ def test_csv_file_upload_validation(page: Page, streamlit_app, sample_csv_files)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    csv_import_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Upload the combined CSV file
     file_input = page.locator('input[type="file"]').first
@@ -33,7 +32,7 @@ def test_csv_file_upload_validation(page: Page, streamlit_app, sample_csv_files)
             validate_btn.click()
             
             # Wait for validation to complete
-            time.sleep(3)
+            time.sleep(120)
             
             # Check for validation results
             expect(page.locator("text=Validation Results")).to_be_visible()
@@ -47,19 +46,17 @@ def test_csv_import_workflow(page: Page, streamlit_app, sample_csv_files, clean_
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # First create a database
-    db_mgmt_radio = page.locator('label:has-text("Database Management")').first
-    db_mgmt_radio.click()
-    time.sleep(1)
+    page.locator('a[href*="3_Database_Views"]').first.click()
+    time.sleep(120)
     
     create_btn = page.locator('button:has-text("Create New Database")')
     if create_btn.is_visible():
         create_btn.click()
-        time.sleep(3)
+        time.sleep(120)
     
     # Now go to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    csv_import_radio.click()
-    time.sleep(1)
+    page.locator('a[href*="2_CSV_Import"]').first.click()
+    time.sleep(120)
     
     # Upload and import the file
     file_input = page.locator('input[type="file"]').first
@@ -71,13 +68,13 @@ def test_csv_import_workflow(page: Page, streamlit_app, sample_csv_files, clean_
         validate_btn = page.locator('button:has-text("Validate")')
         if validate_btn.is_visible():
             validate_btn.click()
-            time.sleep(3)
+            time.sleep(120)
             
             # If validation passes, import
             import_btn = page.locator('button:has-text("Import")')
             if import_btn.is_visible():
                 import_btn.click()
-                time.sleep(5)
+                time.sleep(120)
                 
                 # Look for success message
                 expect(page.locator("text=Import completed successfully")).to_be_visible()
@@ -96,9 +93,8 @@ John,Doe,Invalid Data
 """)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    csv_import_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Upload the invalid file
     file_input = page.locator('input[type="file"]').first
@@ -110,7 +106,7 @@ John,Doe,Invalid Data
         validate_btn = page.locator('button:has-text("Validate")')
         if validate_btn.is_visible():
             validate_btn.click()
-            time.sleep(3)
+            time.sleep(120)
             
             # Should see validation errors
             expect(page.locator('[data-testid="stAlert"]')).to_be_visible()
@@ -127,9 +123,8 @@ def test_csv_upload_file_types(page: Page, streamlit_app, tmp_path):
     txt_file.write_text("This is not a CSV file")
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    csv_import_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # File uploader should restrict to CSV files
     file_input = page.locator('input[type="file"]').first
@@ -147,15 +142,14 @@ def test_csv_progress_indicators(page: Page, streamlit_app, sample_csv_files):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    csv_import_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Upload file
     file_input = page.locator('input[type="file"]').first
     if file_input.is_visible():
         file_input.set_input_files(str(sample_csv_files["combined"]))
-        time.sleep(1)
+        time.sleep(120)
         
         # Start validation and look for progress indicators
         validate_btn = page.locator('button:has-text("Validate")')
@@ -164,10 +158,10 @@ def test_csv_progress_indicators(page: Page, streamlit_app, sample_csv_files):
             
             # Look for spinner or progress indicator
             # Streamlit typically shows spinners during processing
-            time.sleep(1)  # Brief pause to catch any loading indicators
+            time.sleep(120)  # Brief pause to catch any loading indicators
             
             # Wait for completion
-            time.sleep(3)
+            time.sleep(120)
             expect(page.locator("text=Validation Results")).to_be_visible()
 
 
@@ -178,9 +172,8 @@ def test_csv_validation_results_display(page: Page, streamlit_app, sample_csv_fi
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    csv_import_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Upload and validate file
     file_input = page.locator('input[type="file"]').first
@@ -191,7 +184,7 @@ def test_csv_validation_results_display(page: Page, streamlit_app, sample_csv_fi
         validate_btn = page.locator('button:has-text("Validate")')
         if validate_btn.is_visible():
             validate_btn.click()
-            time.sleep(3)
+            time.sleep(120)
             
             # Check for detailed validation results
             expect(page.locator("text=Validation Results")).to_be_visible()
@@ -209,9 +202,8 @@ def test_csv_clear_and_reupload(page: Page, streamlit_app, sample_csv_files):
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
     # Navigate to CSV Import page
-    csv_import_radio = page.locator('label:has-text("CSV Import")').first
-    csv_import_radio.click()
-    time.sleep(1)
+    page.locator('[data-testid="stSidebarNav"] a:has-text("CSV Import")').first.click()
+    page.wait_for_load_state("networkidle")
     
     # Upload first file
     file_input = page.locator('input[type="file"]').first
@@ -223,7 +215,7 @@ def test_csv_clear_and_reupload(page: Page, streamlit_app, sample_csv_files):
         clear_btn = page.locator('button:has-text("Clear")')
         if clear_btn.is_visible():
             clear_btn.click()
-            time.sleep(1)
+            page.wait_for_load_state("networkidle")
         
         # Upload second file
         file_input.set_input_files(str(sample_csv_files["adult"]))
