@@ -33,6 +33,18 @@ def sample_data_loaded(create_test_db):
             ('Bob', 'Wilson', 'bob.wilson@example.com', '34567', 101)
         ''')
         
+        # Add adult merit badges (counselor qualifications) 
+        cursor.execute('''
+        INSERT INTO adult_merit_badges (adult_id, merit_badge_name)
+        VALUES 
+            (1, 'Camping'),
+            (1, 'First Aid'),
+            (2, 'Hiking'), 
+            (2, 'Cooking'),
+            (3, 'Camping'),
+            (3, 'Swimming')
+        ''')
+        
         # Add sample scouts
         cursor.execute('''
         INSERT INTO scouts (first_name, last_name, bsa_number, rank, patrol_name, unit_number, activity_status)
@@ -42,16 +54,22 @@ def sample_data_loaded(create_test_db):
             ('Mike', 'Davis', 98003, 'Star', 'Wolf Patrol', 101, 'Active')
         ''')
         
-        # Add sample merit badge progress with different statuses
+        # Add sample scout merit badge progress (using youth roster table) 
         cursor.execute('''
-        INSERT INTO merit_badge_progress (scout_id, mbc_adult_id, scout_first_name, scout_last_name, scout_bsa_number, scout_rank, merit_badge_name, merit_badge_year, mbc_name_raw, requirements_raw, date_completed)
+        INSERT INTO scout_merit_badge_progress (scout_id, merit_badge_name, counselor_adult_id, status, date_started, requirements_completed, notes)
         VALUES 
-            (1, 1, 'Tom', 'Anderson', 98001, 'Eagle', 'Camping', '2024', 'John Smith', 'Requirements 1-3 completed', NULL),
-            (1, 2, 'Tom', 'Anderson', 98001, 'Eagle', 'Hiking', '2024', 'Mary Johnson', 'Requirements 1-5 completed', NULL),
-            (1, 1, 'Tom', 'Anderson', 98001, 'Eagle', 'First Aid', '2024', 'John Smith', 'All requirements complete', '2024-01-15'),
-            (2, 1, 'Sarah', 'Brown', 98002, 'Life', 'Camping', '2024', 'John Smith', 'Requirements 1-2 completed', NULL),
-            (2, 3, 'Sarah', 'Brown', 98002, 'Life', 'Cooking', '2024', 'Bob Wilson', 'No Requirements Complete', NULL),
-            (3, 2, 'Mike', 'Davis', 98003, 'Star', 'Hiking', '2024', 'Mary Johnson', 'Requirements 1-4 completed', NULL)
+            -- Tom Anderson: mix of assigned and unassigned, only in-progress should show
+            (1, 'Camping', 1, 'In Progress', '2024-01-01', 'Requirements 1-3 completed', 'Working with John'),
+            (1, 'Hiking', 2, 'In Progress', '2024-02-01', 'Requirements 1-5 completed', 'Working with Mary'),
+            (1, 'First Aid', 1, 'Completed', '2024-01-15', 'All requirements complete', 'Badge earned'),
+            (1, 'Swimming', NULL, 'In Progress', '2024-03-01', 'Just started', 'Needs counselor assignment'),
+            
+            -- Sarah Brown: mix of statuses
+            (2, 'Camping', 1, 'In Progress', '2024-02-15', 'Requirements 1-2 completed', 'Working with John'),
+            (2, 'Cooking', NULL, 'In Progress', '2024-03-01', 'No Requirements Complete', 'Looking for counselor'),
+            
+            -- Mike Davis: has assignments
+            (3, 'Hiking', 2, 'In Progress', '2024-01-01', 'Requirements 1-4 completed', 'Working with Mary')
         ''')
         
         conn.commit()
@@ -85,14 +103,13 @@ def test_scout_modal_opens_from_roster(page: Page, streamlit_app, sample_data_lo
     page.click('button:has-text("👤 Tom Anderson")')
     time.sleep(120)
     
-    # Verify the modal opened
-    expect(page.locator("text=🎯 MBC Assignments for Tom Anderson")).to_be_visible()
-    expect(page.locator("text=Scout: Tom Anderson (BSA #98001)")).to_be_visible()
+    # Verify the modal opened with new title
+    expect(page.locator("text=🎯 Merit Badges in Progress for Tom Anderson")).to_be_visible()
 
 
 @pytest.mark.ui 
-def test_scout_modal_displays_correct_mbc_data(page: Page, streamlit_app, sample_data_loaded):
-    """Test that the modal displays all MBCs for the selected Scout with correct workload data."""
+def test_scout_modal_displays_correct_in_progress_badges(page: Page, streamlit_app, sample_data_loaded):
+    """Test that the modal displays only in-progress merit badges (not completed ones)."""
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
@@ -102,31 +119,31 @@ def test_scout_modal_displays_correct_mbc_data(page: Page, streamlit_app, sample
     page.click('label:has-text("Youth Views")')
     time.sleep(120)
     
-    # Click on Tom Anderson (who has 3 merit badge assignments with 2 MBCs)
+    # Click on Tom Anderson (who has 3 in-progress + 1 completed badge)
     page.click('button:has-text("👤 Tom Anderson")')
     time.sleep(120)
     
-    # Verify modal shows correct summary
-    expect(page.locator("text=Total MBCs: 2")).to_be_visible()
-    expect(page.locator("text=Total Merit Badge Assignments: 3")).to_be_visible()
+    # Verify modal shows correct title and count (should be 3 in-progress, not 4 total)
+    expect(page.locator("text=🎯 Merit Badges in Progress for Tom Anderson")).to_be_visible()
+    expect(page.locator("text=Merit Badges in Progress: 3")).to_be_visible()
     
-    # Verify John Smith MBC section is shown (has 2 merit badges with Tom)
-    expect(page.locator("text=👤 John Smith - john.smith@example.com")).to_be_visible()
+    # Verify in-progress badges are shown
+    expect(page.locator("text=🏅 Camping")).to_be_visible()
+    expect(page.locator("text=🏅 Hiking")).to_be_visible()
+    expect(page.locator("text=🏅 Swimming")).to_be_visible()
     
-    # Verify Mary Johnson MBC section is shown (has 1 merit badge with Tom)
-    expect(page.locator("text=👤 Mary Johnson - mary.johnson@example.com")).to_be_visible()
+    # Verify completed badge (First Aid) is NOT shown
+    expect(page.locator("text=🏅 First Aid")).not_to_be_visible()
     
-    # Verify MBC workload data is displayed
-    expect(page.locator("text=📊 MBC Current Workload")).to_be_visible()
-    expect(page.locator("text=Total Scouts")).to_be_visible()
-    expect(page.locator("text=Active Assignments")).to_be_visible()
-    expect(page.locator("text=Completed Assignments")).to_be_visible()
-    expect(page.locator("text=Merit Badges")).to_be_visible()
+    # Verify counselor assignment info
+    expect(page.locator("text=👤 John Smith")).to_be_visible()  # Camping counselor
+    expect(page.locator("text=👤 Mary Johnson")).to_be_visible()  # Hiking counselor
+    expect(page.locator("text=⚠️ No counselor assigned")).to_be_visible()  # Swimming has no counselor
 
 
 @pytest.mark.ui
-def test_scout_modal_shows_merit_badge_details(page: Page, streamlit_app, sample_data_loaded):
-    """Test that the modal shows merit badge details for each MBC."""
+def test_scout_modal_assign_counselor_button(page: Page, streamlit_app, sample_data_loaded):
+    """Test that unassigned merit badges show the 'Assign Counselor' button."""
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
@@ -138,19 +155,14 @@ def test_scout_modal_shows_merit_badge_details(page: Page, streamlit_app, sample
     page.click('button:has-text("👤 Tom Anderson")')
     page.wait_for_load_state("networkidle")
     
-    # Verify merit badge details are shown
-    expect(page.locator("text=🏅 Merit Badges with Tom Anderson")).to_be_visible()
-    expect(page.locator("text=Camping (2024)")).to_be_visible()
-    expect(page.locator("text=Hiking (2024)")).to_be_visible()
-    expect(page.locator("text=First Aid (2024)")).to_be_visible()
+    # Verify Swimming badge has no counselor and shows assign button
+    expect(page.locator("text=🏅 Swimming")).to_be_visible()
+    expect(page.locator("text=⚠️ No counselor assigned")).to_be_visible()
+    expect(page.locator("text=🔗 Assign Counselor")).to_be_visible()
     
-    # Verify status indicators
-    expect(page.locator("text=In Progress")).to_be_visible()
-    expect(page.locator("text=Completed")).to_be_visible()
-    
-    # Verify requirements are shown
-    expect(page.locator("text=Requirements: Requirements 1-3 completed")).to_be_visible()
-    expect(page.locator("text=Requirements: Requirements 1-5 completed")).to_be_visible()
+    # Verify assigned badges don't show the assign button (they show counselor info instead)
+    expect(page.locator("text=👤 John Smith")).to_be_visible()  # Camping has counselor
+    expect(page.locator("text=👤 Mary Johnson")).to_be_visible()  # Hiking has counselor
 
 
 @pytest.mark.ui
@@ -167,22 +179,22 @@ def test_scout_modal_closes_correctly(page: Page, streamlit_app, sample_data_loa
     page.click('button:has-text("👤 Sarah Brown")')
     page.wait_for_load_state("networkidle")
     
-    # Verify modal is open
-    expect(page.locator("text=🎯 MBC Assignments for Sarah Brown")).to_be_visible()
+    # Verify the modal opened with new title
+    expect(page.locator("text=🎯 Merit Badges in Progress for Sarah Brown")).to_be_visible()
     
     # Click the Close button
     page.click('button:has-text("✖️ Close")')
     time.sleep(120)
     
     # Verify modal is closed and we're back to the roster
-    expect(page.locator("text=🎯 MBC Assignments for Sarah Brown")).not_to_be_visible()
+    expect(page.locator("text=🎯 Merit Badges in Progress for Sarah Brown")).not_to_be_visible()
     expect(page.locator("text=Click on a Scout name to view their MBC assignments")).to_be_visible()
     expect(page.locator('button:has-text("👤 Sarah Brown")')).to_be_visible()
 
 
 @pytest.mark.ui
 def test_different_scouts_show_different_data(page: Page, streamlit_app, sample_data_loaded):
-    """Test that different scouts show different MBC data in their modals."""
+    """Test that different scouts show different in-progress merit badge data."""
     page.goto(streamlit_app)
     page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
     
@@ -192,101 +204,35 @@ def test_different_scouts_show_different_data(page: Page, streamlit_app, sample_
     page.click('label:has-text("Youth Views")')
     time.sleep(120)
     
-    # Test Sarah Brown (has 2 MBCs)
+    # Test Sarah Brown (has 2 in-progress badges)
     page.click('button:has-text("👤 Sarah Brown")')
     time.sleep(120)
     
-    expect(page.locator("text=🎯 MBC Assignments for Sarah Brown")).to_be_visible()
-    expect(page.locator("text=Total MBCs: 2")).to_be_visible()
-    expect(page.locator("text=Total Merit Badge Assignments: 2")).to_be_visible()
-    expect(page.locator("text=👤 Bob Wilson - bob.wilson@example.com")).to_be_visible()
+    expect(page.locator("text=🎯 Merit Badges in Progress for Sarah Brown")).to_be_visible()
+    expect(page.locator("text=Merit Badges in Progress: 2")).to_be_visible()
+    expect(page.locator("text=🏅 Camping")).to_be_visible()
+    expect(page.locator("text=🏅 Cooking")).to_be_visible()
     
-    # Close modal and test Mike Davis (has 1 MBC)
+    # Close modal and test Mike Davis (has 1 in-progress badge)
     page.click('button:has-text("✖️ Close")')
     time.sleep(120)
     
     page.click('button:has-text("👤 Mike Davis")')
     time.sleep(120)
     
-    expect(page.locator("text=🎯 MBC Assignments for Mike Davis")).to_be_visible()
-    expect(page.locator("text=Total MBCs: 1")).to_be_visible()
-    expect(page.locator("text=Total Merit Badge Assignments: 1")).to_be_visible()
-    expect(page.locator("text=👤 Mary Johnson - mary.johnson@example.com")).to_be_visible()
+    expect(page.locator("text=🎯 Merit Badges in Progress for Mike Davis")).to_be_visible()
+    expect(page.locator("text=Merit Badges in Progress: 1")).to_be_visible()
+    expect(page.locator("text=🏅 Hiking")).to_be_visible()
+    expect(page.locator("text=👤 Mary Johnson")).to_be_visible()
 
-
-@pytest.mark.ui
-def test_scout_modal_workload_numbers_accurate(page: Page, streamlit_app, sample_data_loaded):
-    """Test that MBC workload numbers are accurate in the modal."""
-    page.goto(streamlit_app)
-    page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
-    
-    # Navigate to scouts roster and open Tom Anderson's modal
-    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
-    page.wait_for_load_state("networkidle")
-    page.click('label:has-text("Youth Views")')
-    page.wait_for_load_state("networkidle")
-    page.click('button:has-text("👤 Tom Anderson")')
-    page.wait_for_load_state("networkidle")
-    
-    # Verify John Smith's workload (works with Tom and Sarah)
-    john_smith_section = page.locator('text=👤 John Smith - john.smith@example.com').locator('xpath=following-sibling::*[1]')
-    
-    # John Smith should have: 2 total scouts (Tom, Sarah), 2 active, 1 completed, 2 merit badges (Camping, First Aid)
-    expect(john_smith_section.locator("text=2").first).to_be_visible()  # Total Scouts
-    
-    # Close and check Mary Johnson with Mike Davis
-    page.click('button:has-text("✖️ Close")')
-    time.sleep(120)
-    page.click('button:has-text("👤 Mike Davis")')
-    time.sleep(120)
-    
-    # Mary Johnson should have: 2 total scouts (Tom, Mike), 2 active, 0 completed, 1 merit badge (Hiking)
-    mary_section = page.locator('text=👤 Mary Johnson - mary.johnson@example.com').locator('xpath=following-sibling::*[1]')
-    expect(mary_section.locator("text=2").first).to_be_visible()  # Total Scouts
 
 
 @pytest.mark.ui
-def test_scout_modal_accessibility_features(page: Page, streamlit_app, sample_data_loaded):
-    """Test accessibility features of the Scout modal."""
-    page.goto(streamlit_app)
-    page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
-    
-    # Navigate to scouts roster
-    page.locator('a[href*="3_Database_Views"]').first.click()
-    time.sleep(120)
-    page.click('label:has-text("Youth Views")')
-    time.sleep(120)
-    
-    # Test that Scout buttons have proper aria labels or help text
-    tom_button = page.locator('button:has-text("👤 Tom Anderson")')
-    expect(tom_button).to_be_visible()
-    
-    # Open modal
-    tom_button.click()
-    time.sleep(120)
-    
-    # Test keyboard navigation to close button
-    page.keyboard.press('Tab')
-    page.keyboard.press('Tab')
-    page.keyboard.press('Tab')
-    
-    # Find and test close button
-    close_button = page.locator('button:has-text("✖️ Close")')
-    expect(close_button).to_be_visible()
-    expect(close_button).to_be_enabled()
-    
-    # Test that modal content is properly structured with headings
-    expect(page.locator("h3:has-text('🎯 MBC Assignments for Tom Anderson')")).to_be_visible()
-    expect(page.locator("h3:has-text('📊 MBC Current Workload')")).to_be_visible()
-    expect(page.locator("h3:has-text('🏅 Merit Badges with Tom Anderson')")).to_be_visible()
-
-
-@pytest.mark.ui
-def test_scout_modal_handles_no_mbcs(page: Page, streamlit_app, clean_database):
-    """Test that the modal handles scouts with no MBC assignments gracefully."""
+def test_scout_modal_handles_no_in_progress_badges(page: Page, streamlit_app, clean_database):
+    """Test that the modal handles scouts with no in-progress merit badges gracefully."""
     db_path = "merit_badge_manager.db"
     
-    # Create database with only scouts, no merit badge progress
+    # Create database with scout that has only completed badges
     from database.setup_database import create_database_schema
     create_database_schema(db_path, include_youth=True)
     
@@ -294,11 +240,17 @@ def test_scout_modal_handles_no_mbcs(page: Page, streamlit_app, clean_database):
     cursor = conn.cursor()
     
     try:
-        # Add only a scout with no MBC assignments
+        # Add scout with only completed merit badges (no in-progress)
         cursor.execute('''
         INSERT INTO scouts (first_name, last_name, bsa_number, rank, patrol_name, unit_number, activity_status)
         VALUES ('Empty', 'Scout', 99999, 'Scout', 'Test Patrol', 101, 'Active')
         ''')
+        
+        cursor.execute('''
+        INSERT INTO scout_merit_badge_progress (scout_id, merit_badge_name, counselor_adult_id, status, date_completed)
+        VALUES (1, 'Swimming', 1, 'Completed', '2024-01-01')
+        ''')
+        
         conn.commit()
     finally:
         conn.close()
@@ -312,19 +264,50 @@ def test_scout_modal_handles_no_mbcs(page: Page, streamlit_app, clean_database):
     page.click('label:has-text("Youth Views")')
     time.sleep(120)
     
-    # Click on the scout with no assignments
+    # Click on the scout with no in-progress badges
     page.click('button:has-text("👤 Empty Scout")')
     time.sleep(120)
     
     # Should show appropriate message
-    expect(page.locator("text=No MBC assignments found for Empty Scout")).to_be_visible()
+    expect(page.locator("text=No Merit Badges in progress for Empty Scout")).to_be_visible()
     expect(page.locator('button:has-text("Close")')).to_be_visible()
     
     # Close should work
     page.click('button:has-text("Close")')
     time.sleep(120)
-    expect(page.locator("text=No MBC assignments found")).not_to_be_visible()
+    expect(page.locator("text=No Merit Badges in progress")).not_to_be_visible()
     
     # Cleanup
     if Path(db_path).exists():
         Path(db_path).unlink()
+
+
+@pytest.mark.ui
+def test_counselor_assignment_workflow(page: Page, streamlit_app, sample_data_loaded):
+    """Test the counselor assignment workflow for unassigned merit badges."""
+    page.goto(streamlit_app)
+    page.wait_for_selector('[data-testid="stApp"]', timeout=10000)
+    
+    # Navigate to scouts roster and open Tom Anderson's modal
+    page.locator('[data-testid="stSidebarNav"] a:has-text("Database Views")').first.click()
+    page.wait_for_load_state("networkidle")
+    page.click('label:has-text("Youth Views")')
+    page.wait_for_load_state("networkidle")
+    page.click('button:has-text("👤 Tom Anderson")')
+    page.wait_for_load_state("networkidle")
+    
+    # Find and click the "Assign Counselor" button for Swimming badge
+    expect(page.locator("text=🏅 Swimming")).to_be_visible()
+    expect(page.locator("text=🔗 Assign Counselor")).to_be_visible()
+    page.click('button:has-text("🔗 Assign Counselor")')
+    page.wait_for_load_state("networkidle")
+    
+    # Should now show counselor assignment interface
+    expect(page.locator("text=🔗 Assign Counselor for Swimming")).to_be_visible()
+    expect(page.locator("text=Available Counselors for Swimming")).to_be_visible()
+    
+    # Should show available counselors (Bob Wilson counsels Swimming)
+    expect(page.locator("text=👤 Bob Wilson")).to_be_visible()
+    
+    # Should have back button to return to badges view
+    expect(page.locator("text=← Back to Merit Badges")).to_be_visible()
