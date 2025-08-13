@@ -125,6 +125,7 @@ The server will be available at:
 - **Database Management**: SQLite database with proper schema and relationships, including 51 optimized indexes and 6 specialized views
 - **Adult Roster Management**: Complete adult member database with training, merit badges, and positions
 - **Youth Roster Management**: Comprehensive Scout tracking with merit badge progress, advancement history, and parent contacts
+- **Scout Merit Badge Modal**: Interactive modal interface for viewing Scout's in-progress merit badges with counselor assignment functionality - click any Scout name to see their merit badge progress and assign/reassign counselors based on workload
 - **Scout-to-Counselor Integration**: Seamless assignment system connecting Scouts with adult merit badge counselors through BSA number matching
 - **Reporting & Export**: Generate actionable reports and Excel exports with comprehensive import statistics
 - **MBC Assignment Engine**: Intelligent assignment recommendations with data quality validation
