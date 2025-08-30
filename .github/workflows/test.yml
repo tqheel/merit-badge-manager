@@ -1,10 +1,16 @@
 name: Test Suite
 
-on:
+"on":
   push:
-    branches: [ master, main, develop ]
+    branches: [ "*" ]  # Run on all branches
   pull_request:
-    branches: [ master, main, develop ]
+    branches: [ "*" ]  # Run on PRs to all branches
+  workflow_dispatch:    # Allow manual triggering
+
+permissions:
+  contents: read       # Read repository contents
+  actions: read        # Read workflow runs
+  checks: write        # Write check results
 
 jobs:
   test:
@@ -64,16 +70,16 @@ jobs:
         source venv/bin/activate
         echo "Validating database utilities are imported in web UI pages..."
         python -c "
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path('web-ui')))
-try:
-    from database_utils import get_database_path, get_database_connection, database_exists
-    print('✅ Database utilities can be imported successfully')
-except ImportError as e:
-    print(f'❌ Failed to import database utilities: {e}')
-    sys.exit(1)
-"
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path('web-ui')))
+        try:
+            from database_utils import get_database_path, get_database_connection, database_exists
+            print('✅ Database utilities can be imported successfully')
+        except ImportError as e:
+            print(f'❌ Failed to import database utilities: {e}')
+            sys.exit(1)
+        "
 
     - name: Check database consolidation
       run: |
