@@ -1,6 +1,17 @@
 # MCP Server GitHub Integration
 
-The Merit Badge Manager MCP Server now includes GitHub integration to automatically publish feature requests as GitHub Issues.
+The Merit Badge Manager MCP Server is a **development workflow tool** that provides GitHub integration to automatically publish YAML workitems as GitHub Issues. 
+
+**Note**: This is an auxiliary tool for managing project issues and is **not required** for the core Merit Badge Manager functionality. The main application (Streamlit UI, database management, CSV import, etc.) works independently of this MCP server.
+
+## What This Tool Does
+
+The MCP server enables:
+- Publishing YAML feature/bug files as GitHub issues
+- Managing workitems in the development workflow
+- Integrating with GitHub's issue tracking system
+
+**This is NOT part of the core Merit Badge Manager application** - it's a separate tool for managing the development process itself.
 
 ## Setup
 
