@@ -567,7 +567,7 @@ def main():
     )
     parser.add_argument(
         "--database", "-d",
-        default="merit_badge_manager.db",
+        default="database/merit_badge_manager.db",
         help="Path to the SQLite database"
     )
     parser.add_argument(

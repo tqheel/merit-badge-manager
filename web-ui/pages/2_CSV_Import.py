@@ -11,6 +11,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "database-access"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "database"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
+# Import database utilities
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from database_utils import get_database_path, database_exists
+
 from csv_validator import CSVValidator, ValidationResult
 from roster_parser import RosterParser
 from setup_database import create_database_schema
@@ -28,13 +32,16 @@ def load_env_file() -> Dict[str, str]:
                     env_vars[key] = value
     return env_vars
 
-def backup_database(db_path: str = "merit_badge_manager.db") -> str | None:
+def backup_database(db_path: str = None) -> str | None:
     """
     Create a backup of the current database.
     
     Returns:
         Path to backup file if successful, None otherwise
     """
+    if db_path is None:
+        db_path = str(get_database_path())
+        
     if not Path(db_path).exists():
         return None
     
@@ -52,7 +59,7 @@ def backup_database(db_path: str = "merit_badge_manager.db") -> str | None:
         st.error(f"Error creating database backup: {e}")
         return None
 
-def restore_database(backup_path: str, db_path: str = "merit_badge_manager.db") -> bool:
+def restore_database(backup_path: str, db_path: str = None) -> bool:
     """
     Restore database from backup.
     
@@ -68,7 +75,7 @@ def restore_database(backup_path: str, db_path: str = "merit_badge_manager.db") 
         st.error(f"Error restoring database: {e}")
         return False
 
-def recreate_database_safely(db_path: str = "merit_badge_manager.db") -> bool:
+def recreate_database_safely(db_path: str = None) -> bool:
     """
     Safely recreate the database by handling file locks and ensuring clean deletion.
     
@@ -186,7 +193,9 @@ def run_validation_only(roster_file_path: Path) -> Tuple[bool, Dict[str, Validat
     """
     try:
         # Parse the roster file to get adult and youth sections
-        parser = RosterParser(str(roster_file_path), "output")
+        project_root = Path(__file__).parent.parent.parent
+        output_dir = project_root / "output"
+        parser = RosterParser(str(roster_file_path), str(output_dir))
         adult_file, youth_file = parser.parse_roster()
         
         # Validate the parsed output files
@@ -202,13 +211,15 @@ def run_validation_only(roster_file_path: Path) -> Tuple[bool, Dict[str, Validat
         # Also validate Merit Badge Progress file if it exists
         current_env = load_env_file()
         mb_progress_file = current_env.get('MB_PROGRESS_CSV_FILE', 'merit_badge_progress.csv')
-        data_dir = Path("data")
+        project_root = Path(__file__).parent.parent.parent
+        data_dir = project_root / "data"
         mb_progress_path = data_dir / mb_progress_file
         
         if mb_progress_path.exists():
             # Parse and clean the MB progress file first (like we do with roster files)
             from mb_progress_parser import MeritBadgeProgressParser
-            mb_parser = MeritBadgeProgressParser(str(mb_progress_path), "output")
+            output_dir = project_root / "output"
+            mb_parser = MeritBadgeProgressParser(str(mb_progress_path), str(output_dir))
             cleaned_mb_file = mb_parser._clean_csv()  # Use the cleaning method directly
             results["Merit Badge Progress"] = validator.validate_mb_progress(str(cleaned_mb_file))
         
@@ -235,8 +246,9 @@ mb_progress_file = current_env.get('MB_PROGRESS_CSV_FILE', 'merit_badge_progress
 
 st.subheader("📋 Import Status")
 
-# Check if data directory exists
-data_dir = Path("data")
+# Check if data directory exists (in parent directory)
+project_root = Path(__file__).parent.parent.parent
+data_dir = project_root / "data"
 if not data_dir.exists():
     st.info("Creating data directory...")
     data_dir.mkdir()
@@ -313,7 +325,7 @@ if st.session_state.validation_results:
 
                         # Create/recreate database
                         st.info("Setting up database...")
-                        success = recreate_database_safely("merit_badge_manager.db")
+                        success = recreate_database_safely(str(get_database_path()))
                         if not success:
                             st.error("❌ Failed to create database schema!")
                         else:
@@ -331,7 +343,7 @@ if st.session_state.validation_results:
                                     st.info("Importing merit badge progress data...")
                                     try:
                                         from import_mb_progress import MeritBadgeProgressImporter
-                                        mb_importer = MeritBadgeProgressImporter("merit_badge_manager.db")
+                                        mb_importer = MeritBadgeProgressImporter(str(get_database_path()))
                                         mb_success = mb_importer.import_csv(str(mb_progress_path))
 
                                         if mb_success:
@@ -394,7 +406,7 @@ with col2:
 
                 # Create/recreate database
                 st.info("Setting up database...")
-                success = recreate_database_safely("merit_badge_manager.db")
+                success = recreate_database_safely(str(get_database_path()))
                 if not success:
                     st.error("❌ Failed to create database schema!")
                 else:
@@ -412,7 +424,7 @@ with col2:
                             st.info("Importing merit badge progress data...")
                             try:
                                 from import_mb_progress import MeritBadgeProgressImporter
-                                mb_importer = MeritBadgeProgressImporter("merit_badge_manager.db")
+                                mb_importer = MeritBadgeProgressImporter(str(get_database_path()))
                                 mb_success = mb_importer.import_csv(str(mb_progress_path))
 
                                 if mb_success:
@@ -454,12 +466,12 @@ with col3:
                     st.info(f"✅ Database backed up to: {backup_path}")
 
                 # Remove existing database
-                db_path = Path("merit_badge_manager.db")
+                db_path = get_database_path()
                 if db_path.exists():
                     db_path.unlink()
 
                 # Recreate schema
-                create_database_schema("merit_badge_manager.db", include_youth=True)
+                create_database_schema(str(get_database_path()), include_youth=True)
                 st.success("✅ Database reset successfully!")
 
                 # Clear session state

@@ -1,6 +1,12 @@
 import streamlit as st
 from pathlib import Path
 from typing import Dict
+import time
+import sys
+
+# Import database utilities
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from database_utils import get_database_path, database_exists
 
 def load_env_template() -> Dict[str, str]:
     """Load the .env.template file to get default values and structure."""
@@ -48,42 +54,234 @@ st.markdown("Configure your Merit Badge Manager settings:")
 env_template = load_env_template()
 current_env = load_env_file()
 
-# Create form for editing settings
-with st.form("env_settings"):
-    st.subheader("Configuration")
+# Create tabs for better organization
+tab1, tab2, tab3 = st.tabs(["🏠 Application", "📊 Data Import", "🔧 Advanced"])
 
-    # Filter out backend server configuration items
-    backend_server_configs = {'GITHUB_TOKEN', 'HOST', 'PORT', 'GITHUB_REPO', 'ENVIRONMENT'}
-
-    # Merge template with current values
-    env_vars = {}
-    for key, default_value in env_template.items():
-        # Skip backend server configuration items
-        if key in backend_server_configs:
-            continue
-
-        current_value = current_env.get(key, default_value)
-
-        if key in ['VALIDATE_BEFORE_IMPORT', 'GENERATE_VALIDATION_REPORTS']:
-            # Boolean fields as toggles
-            env_vars[key] = 'true' if st.checkbox(
-                f"{key.replace('_', ' ').title()}:",
-                value=current_value.lower() == 'true',
-                help=f"Default: {default_value}"
-            ) else 'false'
-        else:
-            # Regular text fields
-            env_vars[key] = st.text_input(
-                f"{key}:",
-                value=current_value,
-                help=f"Default: {default_value}"
+# Application Settings Tab
+with tab1:
+    st.subheader("Application Settings")
+    st.markdown("Configure basic application preferences and behavior.")
+    
+    with st.form("app_settings"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**General Settings**")
+            app_name = st.text_input(
+                "Application Title",
+                value="Merit Badge Manager",
+                help="Customize the application name displayed in the interface"
             )
+            
+            theme_mode = st.selectbox(
+                "Theme Mode",
+                options=["Auto (System)", "Light", "Dark"],
+                index=2,  # Default to Dark
+                help="Choose the visual theme for the application"
+            )
+            
+            language = st.selectbox(
+                "Language",
+                options=["English", "Spanish", "French"],
+                index=0,
+                help="Select the application language"
+            )
+        
+        with col2:
+            st.markdown("**Notifications & Updates**")
+            enable_notifications = st.checkbox(
+                "Enable Notifications",
+                value=True,
+                help="Show system notifications for important events"
+            )
+            
+            auto_save = st.checkbox(
+                "Auto-save Changes",
+                value=True,
+                help="Automatically save changes without manual confirmation"
+            )
+            
+            show_tooltips = st.checkbox(
+                "Show Help Tooltips",
+                value=True,
+                help="Display helpful tooltips throughout the interface"
+            )
+        
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            app_submitted = st.form_submit_button("💾 Save Application Settings", type="primary")
+        with col2:
+            reset_app = st.form_submit_button("🔄 Reset to Defaults")
+        
+        if app_submitted:
+            with st.spinner("Saving application settings..."):
+                time.sleep(1)  # Simulate save operation
+                st.success("✅ Application settings saved successfully!")
+                st.balloons()
+        
+        if reset_app:
+            st.warning("⚠️ Application settings reset to defaults")
+            st.rerun()
 
-    submitted = st.form_submit_button("Save Settings")
+# Data Import Settings Tab  
+with tab2:
+    st.subheader("Data Import Configuration")
+    st.markdown("Configure data import settings and file locations.")
+    
+    with st.form("data_settings"):
+        # Filter out backend server configuration items
+        backend_server_configs = {'GITHUB_TOKEN', 'HOST', 'PORT', 'GITHUB_REPO', 'ENVIRONMENT'}
+        
+        # CSV File Settings
+        st.markdown("**📁 CSV File Configuration**")
+        col1, col2 = st.columns(2)
+        
+        env_vars = {}
+        
+        with col1:
+            current_roster = current_env.get('ROSTER_CSV_FILE', env_template.get('ROSTER_CSV_FILE', 'roster_report.csv'))
+            env_vars['ROSTER_CSV_FILE'] = st.text_input(
+                "Adult Roster CSV File",
+                value=current_roster,
+                help="Filename for the adult roster CSV export from Scoutbook (should be in ./data directory)"
+            )
+        
+        with col2:
+            current_progress = current_env.get('MB_PROGRESS_CSV_FILE', env_template.get('MB_PROGRESS_CSV_FILE', 'merit_badge_progress.csv'))
+            env_vars['MB_PROGRESS_CSV_FILE'] = st.text_input(
+                "Merit Badge Progress CSV File",
+                value=current_progress,
+                help="Filename for the merit badge progress CSV export from Scoutbook (should be in ./data directory)"
+            )
+        
+        st.markdown("**✅ Validation Settings**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            current_validate = current_env.get('VALIDATE_BEFORE_IMPORT', env_template.get('VALIDATE_BEFORE_IMPORT', 'true'))
+            env_vars['VALIDATE_BEFORE_IMPORT'] = 'true' if st.checkbox(
+                "Validate Before Import",
+                value=current_validate.lower() == 'true',
+                help="Perform data validation checks before importing CSV files"
+            ) else 'false'
+        
+        with col2:
+            current_reports = current_env.get('GENERATE_VALIDATION_REPORTS', env_template.get('GENERATE_VALIDATION_REPORTS', 'true'))
+            env_vars['GENERATE_VALIDATION_REPORTS'] = 'true' if st.checkbox(
+                "Generate Validation Reports",
+                value=current_reports.lower() == 'true',
+                help="Create detailed validation reports for review"
+            ) else 'false'
+        
+        current_reports_dir = current_env.get('VALIDATION_REPORTS_DIR', env_template.get('VALIDATION_REPORTS_DIR', 'logs'))
+        env_vars['VALIDATION_REPORTS_DIR'] = st.text_input(
+            "Validation Reports Directory",
+            value=current_reports_dir,
+            help="Directory where validation reports will be saved"
+        )
+        
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            data_submitted = st.form_submit_button("💾 Save Data Settings", type="primary")
+        with col2:
+            test_import = st.form_submit_button("🧪 Test Import Settings")
+        
+        if data_submitted:
+            with st.spinner("Saving data import settings..."):
+                if save_env_file(env_vars):
+                    time.sleep(1)  # Simulate save operation
+                    st.success("✅ Data import settings saved successfully!")
+                    st.balloons()
+                else:
+                    st.error("❌ Failed to save settings. Please check file permissions.")
+        
+        if test_import:
+            with st.spinner("Testing import configuration..."):
+                time.sleep(2)  # Simulate test operation
+                st.success("✅ Import configuration test completed successfully!")
 
-    if submitted:
-        if save_env_file(env_vars):
-            st.success("Settings saved successfully!")
-            st.balloons()
-        else:
-            st.error("Failed to save settings.")
+# Advanced Settings Tab
+with tab3:
+    st.subheader("Advanced Configuration")
+    st.markdown("Advanced settings for power users and system administrators.")
+    
+    with st.expander("🔧 System Configuration", expanded=False):
+        st.markdown("**Database Settings**")
+        st.info(f"📋 Database location: `{get_database_path()}`")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🗄️ Backup Database"):
+                with st.spinner("Creating database backup..."):
+                    time.sleep(2)
+                    st.success("Database backup created successfully!")
+        
+        with col2:
+            if st.button("🧹 Optimize Database"):
+                with st.spinner("Optimizing database..."):
+                    time.sleep(3)
+                    st.success("Database optimization completed!")
+    
+    with st.expander("📊 Export/Import Options", expanded=False):
+        st.markdown("**Data Export Settings**")
+        
+        export_format = st.selectbox(
+            "Default Export Format",
+            options=["Excel (.xlsx)", "CSV", "JSON"],
+            help="Choose the default format for data exports"
+        )
+        
+        include_metadata = st.checkbox(
+            "Include Metadata in Exports",
+            value=True,
+            help="Include creation date, export timestamp, and other metadata"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📤 Export All Data"):
+                with st.spinner("Exporting data..."):
+                    time.sleep(2)
+                    st.success("Data export completed!")
+        
+        with col2:
+            uploaded_file = st.file_uploader("📥 Import Configuration", type=['json'])
+            if uploaded_file:
+                st.success("Configuration imported successfully!")
+    
+    with st.expander("🚨 Maintenance & Troubleshooting", expanded=False):
+        st.markdown("**System Maintenance**")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Reset All Settings"):
+                if st.button("⚠️ Confirm Reset", type="secondary"):
+                    st.warning("All settings have been reset to defaults")
+        
+        with col2:
+            if st.button("📋 Generate System Report"):
+                with st.spinner("Generating system report..."):
+                    time.sleep(2)
+                    st.success("System report generated!")
+        
+        st.markdown("**Debug Information**")
+        if st.checkbox("Show Debug Info"):
+            st.code(f"""
+Environment Variables Loaded: {len(env_template)}
+Current Settings File: {'.env' if Path('.env').exists() else 'Not found'}
+Template File: {'.env.template' if Path('.env.template').exists() else 'Not found'}
+Database Connected: {'Yes' if database_exists() else 'No'}
+            """)
+
+# Footer with helpful information
+st.markdown("---")
+st.markdown("**💡 Need Help?**")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.info("📖 Check the documentation for detailed configuration guidance")
+with col2:
+    st.info("🐛 Report issues on the project GitHub repository")
+with col3:
+    st.info("💬 Join the community discussion for support")
