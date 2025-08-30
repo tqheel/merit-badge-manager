@@ -547,11 +547,11 @@ CREATE INDEX idx_scout_advancement_date ON scout_advancement_history(advancement
 ### Age and Activity Status
 - Age is calculated field based on date of birth
 - Scouts aged out (18+) may be marked as inactive
-- "2025 Inactive and Aged Out" patrol indicates aged-out Scouts
-- Active status should be determined by age, patrol assignment, and activity
+- Scout activity status is determined exclusively by the `activity_status` database field
+- Patrol names are descriptive labels only and do not indicate Scout activity status
 
 ### Data Quality Notes
-- Some patrol names are generic: "Anonymous Message", "2025 Inactive and Aged Out"
+- Patrol names are descriptive labels: "Anonymous Message", "2025 Inactive and Aged Out", etc. are valid patrol names
 - BSA Numbers are unique identifiers for matching between systems
 - Empty fields should be handled as NULL values
 - Some addresses may be incomplete or have formatting issues
