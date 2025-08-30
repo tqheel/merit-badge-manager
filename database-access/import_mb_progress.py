@@ -29,7 +29,7 @@ class MeritBadgeProgressImporter:
     CSV parsing, MBC name matching, and database import.
     """
     
-    def __init__(self, db_path: str = "merit_badge_manager.db"):
+    def __init__(self, db_path: str = "database/merit_badge_manager.db"):
         """
         Initialize the importer.
         
@@ -383,8 +383,8 @@ def main():
     )
     parser.add_argument(
         "--database", "-d",
-        default="merit_badge_manager.db",
-        help="Path to the SQLite database (default: merit_badge_manager.db)"
+        default="database/merit_badge_manager.db",
+        help="Path to the SQLite database (default: database/merit_badge_manager.db)"
     )
     parser.add_argument(
         "--auto-match-threshold", "-t",

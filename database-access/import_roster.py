@@ -49,15 +49,23 @@ class RosterImporter:
         self.generate_validation_reports = os.getenv('GENERATE_VALIDATION_REPORTS', 'true').lower() == 'true'
         self.validation_reports_dir = os.getenv('VALIDATION_REPORTS_DIR', 'logs')
         
-        # Set up directories
-        self.data_dir = Path("data")
-        self.output_dir = Path("output")
-        self.db_scripts_dir = Path("db-scripts")
+        # Set up directories - adjust for when running from subdirectories like web-ui
+        current_dir = Path.cwd()
+        if current_dir.name == "web-ui":
+            # Running from web-ui subdirectory, use parent directory as project root
+            self.project_root = current_dir.parent
+        else:
+            # Running from project root
+            self.project_root = current_dir
+            
+        self.data_dir = self.project_root / "data"
+        self.output_dir = self.project_root / "output"
+        self.db_scripts_dir = self.project_root / "db-scripts"
         
         # Create directories if they don't exist
         self.data_dir.mkdir(exist_ok=True)
         self.output_dir.mkdir(exist_ok=True)
-        Path(self.validation_reports_dir).mkdir(exist_ok=True)
+        (self.project_root / self.validation_reports_dir).mkdir(exist_ok=True)
         
         # Set up logging
         logging.basicConfig(
@@ -170,7 +178,9 @@ class RosterImporter:
             
             # Generate detailed report if requested and there are issues
             if self.generate_validation_reports and any(r.has_issues() for r in results.values()):
-                report_file = self.validator.generate_validation_report(results, self.validation_reports_dir)
+                # Use absolute path for validation reports
+                validation_reports_path = str(self.project_root / self.validation_reports_dir)
+                report_file = self.validator.generate_validation_report(results, validation_reports_path)
                 
                 print(f"📋 Detailed validation report generated: {report_file}")
                 
@@ -209,7 +219,7 @@ class RosterImporter:
         """
         try:
             import time
-            db_path = "merit_badge_manager.db"
+            db_path = "database/merit_badge_manager.db"
             
             # First, try to close any existing connections by attempting a dummy connection
             # This helps ensure no lingering connections are holding locks
@@ -269,7 +279,7 @@ class RosterImporter:
             True if successful, False otherwise
         """
         try:
-            db_path = "merit_badge_manager.db"
+            db_path = "database/merit_badge_manager.db"
             
             # Check if database exists - if not, this might be a test scenario with mocked database creation
             if not os.path.exists(db_path):
@@ -320,7 +330,7 @@ class RosterImporter:
         Returns:
             Number of records imported
         """
-        db_path = "merit_badge_manager.db"
+        db_path = "database/merit_badge_manager.db"
         
         if not os.path.exists(db_path):
             raise Exception(f"Database not found: {db_path}")
@@ -439,7 +449,7 @@ class RosterImporter:
         Returns:
             Number of records imported
         """
-        db_path = "merit_badge_manager.db"
+        db_path = "database/merit_badge_manager.db"
         
         if not os.path.exists(db_path):
             raise Exception(f"Database not found: {db_path}")

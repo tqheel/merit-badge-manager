@@ -8,18 +8,22 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "database-access"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "database"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
+# Import database utilities
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from database_utils import get_database_path, database_exists
+
 st.header("🎯 Manual MBC Matching")
 st.markdown("Manually resolve unmatched Merit Badge Counselor names from imported data.")
 
 # Check if database exists
-if not Path("merit_badge_manager.db").exists():
+if not database_exists():
     st.warning("⚠️ Database not found. Please import data first!")
     st.stop()
 
 # Import the manual matcher
 try:
     from manual_mbc_matcher import ManualMBCMatcher
-    matcher = ManualMBCMatcher("merit_badge_manager.db")
+    matcher = ManualMBCMatcher(str(get_database_path()))
 except ImportError as e:
     st.error(f"Error importing manual matcher: {e}")
     st.stop()

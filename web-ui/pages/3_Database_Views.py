@@ -10,18 +10,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "database-access"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "database"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
-def get_database_connection():
-    """Get SQLite database connection."""
-    db_path = "merit_badge_manager.db"
-    if not Path(db_path).exists():
-        return None
-    
-    try:
-        conn = sqlite3.connect(db_path)
-        return conn
-    except Exception as e:
-        st.error(f"Database connection error: {e}")
-        return None
+# Import database utilities
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from database_utils import get_database_connection, get_database_path, database_exists
+
 
 def get_available_views() -> List[str]:
     """Get list of available database views."""
@@ -830,7 +822,7 @@ def display_scouts_roster_with_modal(df: pd.DataFrame):
 st.header("📊 Database Views")
 
 # Check if database exists
-if not Path("merit_badge_manager.db").exists():
+if not database_exists():
     st.warning("⚠️ Database not found. Please import data first!")
     st.stop()
 

@@ -2,6 +2,11 @@ import streamlit as st
 from pathlib import Path
 from typing import Dict
 import time
+import sys
+
+# Import database utilities
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from database_utils import get_database_path, database_exists
 
 def load_env_template() -> Dict[str, str]:
     """Load the .env.template file to get default values and structure."""
@@ -204,7 +209,7 @@ with tab3:
     
     with st.expander("🔧 System Configuration", expanded=False):
         st.markdown("**Database Settings**")
-        st.info("📋 Database location: `./database/merit_badge_manager.db`")
+        st.info(f"📋 Database location: `{get_database_path()}`")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -267,7 +272,7 @@ with tab3:
 Environment Variables Loaded: {len(env_template)}
 Current Settings File: {'.env' if Path('.env').exists() else 'Not found'}
 Template File: {'.env.template' if Path('.env.template').exists() else 'Not found'}
-Database Connected: {'Yes' if Path('./database/merit_badge_manager.db').exists() else 'No'}
+Database Connected: {'Yes' if database_exists() else 'No'}
             """)
 
 # Footer with helpful information

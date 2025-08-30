@@ -30,6 +30,9 @@ Include issue number in all commit messages.
 - Validate Scout-to-counselor assignment functionality when modifying merit badge progress tracking.
 - Include parent/guardian contact validation when working with Scout data.
 - Test validation views for both adult and youth systems to ensure data quality checks function properly.
+- Use the centralized database location at `/database/merit_badge_manager.db` for all database operations.
+- Import database utilities from `web-ui/database_utils.py` when working with web UI components to ensure consistent database access.
+- Use `get_database_path()`, `get_database_connection()`, and `database_exists()` functions from database_utils instead of hardcoding database paths.
 
 ## Never:
 - Never include any passwords, API keys, or sensitive information in the codebase except in secure configuration files that are not committed to the repository.
@@ -41,3 +44,5 @@ Include issue number in all commit messages.
 - Never delete Scout data without proper CASCADE DELETE constraints to maintain referential integrity.
 - Never bypass parent/guardian contact validation when working with Scout information.
 - Never create merit badge assignments without proper counselor validation from adult roster.
+- Never create duplicate database files or hardcode database paths - always use the centralized database location at `/database/merit_badge_manager.db`.
+- Never reference relative database paths like `merit_badge_manager.db` or `./merit_badge_manager.db` in web UI components - use the database_utils functions instead.
