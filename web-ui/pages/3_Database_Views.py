@@ -85,8 +85,151 @@ def get_scout_assignments_for_mbc(mbc_adult_id: int) -> List[Dict]:
     finally:
         conn.close()
 
+def get_scout_merit_badges_in_progress(scout_id: int) -> List[Dict]:
+    """Get all merit badges that a Scout has in progress (not completed), with counselor info."""
+    conn = get_database_connection()
+    if not conn:
+        return []
+    
+    try:
+        query = """
+        SELECT 
+            smbp.id as progress_id,
+            smbp.merit_badge_name,
+            smbp.status,
+            smbp.date_started,
+            smbp.requirements_completed,
+            smbp.notes,
+            smbp.counselor_adult_id,
+            
+            -- MBC Information (NULL if no counselor assigned)
+            a.first_name as mbc_first_name,
+            a.last_name as mbc_last_name,
+            a.first_name || ' ' || a.last_name as mbc_name,
+            a.email as mbc_email,
+            a.bsa_number as mbc_bsa_number,
+            
+            -- MBC Workload Data (from mbc_workload_summary view, NULL if no counselor)
+            mws.total_assignments,
+            mws.active_assignments,
+            mws.completed_assignments,
+            mws.unique_scouts_assigned,
+            mws.unique_merit_badges,
+            mws.merit_badges_counseling
+            
+        FROM scout_merit_badge_progress smbp
+        LEFT JOIN adults a ON smbp.counselor_adult_id = a.id
+        LEFT JOIN mbc_workload_summary mws ON a.id = mws.mbc_adult_id
+        WHERE smbp.scout_id = ? 
+          AND smbp.status != 'Completed'
+          AND (smbp.date_completed IS NULL OR smbp.date_completed = '')
+        ORDER BY smbp.merit_badge_name
+        """
+        
+        cursor = conn.cursor()
+        cursor.execute(query, (scout_id,))
+        rows = cursor.fetchall()
+        
+        # Convert to list of dictionaries
+        columns = [desc[0] for desc in cursor.description]
+        badges = []
+        for row in rows:
+            badges.append(dict(zip(columns, row)))
+        
+        return badges
+        
+    except Exception as e:
+        st.error(f"Error fetching scout merit badges in progress: {e}")
+        return []
+    finally:
+        conn.close()
+
+def get_available_mbcs_for_badge(merit_badge_name: str) -> List[Dict]:
+    """Get all available MBCs who can counsel a specific merit badge, with their workload."""
+    conn = get_database_connection()
+    if not conn:
+        return []
+    
+    try:
+        query = """
+        SELECT DISTINCT
+            a.id as adult_id,
+            a.first_name,
+            a.last_name,
+            a.first_name || ' ' || a.last_name as name,
+            a.email,
+            a.bsa_number,
+            
+            -- MBC Workload Data
+            COALESCE(mws.total_assignments, 0) as total_assignments,
+            COALESCE(mws.active_assignments, 0) as active_assignments,
+            COALESCE(mws.completed_assignments, 0) as completed_assignments,
+            COALESCE(mws.unique_scouts_assigned, 0) as unique_scouts_assigned,
+            COALESCE(mws.unique_merit_badges, 0) as unique_merit_badges,
+            COALESCE(mws.merit_badges_counseling, '') as merit_badges_counseling
+            
+        FROM adults a
+        INNER JOIN adult_merit_badges amb ON a.id = amb.adult_id
+        LEFT JOIN mbc_workload_summary mws ON a.id = mws.mbc_adult_id
+        WHERE amb.merit_badge_name = ?
+        ORDER BY mws.active_assignments ASC, a.last_name, a.first_name
+        """
+        
+        cursor = conn.cursor()
+        cursor.execute(query, (merit_badge_name,))
+        rows = cursor.fetchall()
+        
+        # Convert to list of dictionaries
+        columns = [desc[0] for desc in cursor.description]
+        mbcs = []
+        for row in rows:
+            mbcs.append(dict(zip(columns, row)))
+        
+        return mbcs
+        
+    except Exception as e:
+        st.error(f"Error fetching available MBCs for {merit_badge_name}: {e}")
+        return []
+    finally:
+        conn.close()
+
+def assign_counselor_to_scout(scout_id: int, merit_badge_name: str, counselor_adult_id: int) -> bool:
+    """Assign a counselor to a scout for a specific merit badge."""
+    conn = get_database_connection()
+    if not conn:
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Update the scout_merit_badge_progress table
+        cursor.execute("""
+        UPDATE scout_merit_badge_progress 
+        SET counselor_adult_id = ?
+        WHERE scout_id = ? AND merit_badge_name = ?
+        """, (counselor_adult_id, scout_id, merit_badge_name))
+        
+        conn.commit()
+        
+        if cursor.rowcount > 0:
+            return True
+        else:
+            st.error("No merit badge progress record found to update")
+            return False
+            
+    except Exception as e:
+        st.error(f"Error assigning counselor: {e}")
+        return False
+    finally:
+        conn.close()
+
+# Keep the original function for backward compatibility but mark as deprecated
 def get_scout_mbcs_with_workload(scout_id: int) -> List[Dict]:
-    """Get all MBCs for a specific Scout along with their workload data."""
+    """Get all MBCs for a specific Scout along with their workload data.
+    
+    DEPRECATED: Use get_scout_merit_badges_in_progress() instead for issue #43 compliance.
+    This function shows all badges (completed and in-progress) which is not the desired behavior.
+    """
     conn = get_database_connection()
     if not conn:
         return []
@@ -224,123 +367,197 @@ def display_mbc_modal(mbc_name: str, mbc_adult_id: int):
             st.rerun()
 
 def display_scout_mbc_modal(scout_name: str, scout_id: int, scout_bsa_number: int):
-    """Display modal dialog with MBC assignments for selected Scout."""
+    """Display modal dialog showing Scout's in-progress merit badges with counselor assignment functionality."""
     st.markdown("---")
-    st.subheader(f"🎯 MBC Assignments for {scout_name}")
+    st.subheader(f"🎯 Merit Badges in Progress for {scout_name}")
     
-    # Get Scout's MBC assignments with workload data
-    mbcs = get_scout_mbcs_with_workload(scout_id)
+    # Initialize session state for counselor assignment
+    if 'assigning_counselor' not in st.session_state:
+        st.session_state.assigning_counselor = None
     
-    if not mbcs:
-        st.info(f"No MBC assignments found for {scout_name} (BSA #{scout_bsa_number}).")
+    # Get Scout's in-progress merit badges
+    badges_in_progress = get_scout_merit_badges_in_progress(scout_id)
+    
+    if not badges_in_progress:
+        st.info(f"No Merit Badges in progress for {scout_name} (BSA #{scout_bsa_number}).")
         if st.button("Close", key="close_scout_modal_empty"):
             st.session_state.selected_scout = None
+            if 'assigning_counselor' in st.session_state:
+                del st.session_state.assigning_counselor
             st.rerun()
         return
     
-    # Group MBCs by MBC name to show all merit badges they're working on with this Scout
-    mbcs_dict = {}
-    for mbc_assignment in mbcs:
-        mbc_key = mbc_assignment['mbc_name']
-        if mbc_key not in mbcs_dict:
-            mbcs_dict[mbc_key] = {
-                'mbc_info': {
-                    'name': mbc_assignment['mbc_name'],
-                    'email': mbc_assignment['mbc_email'],
-                    'bsa_number': mbc_assignment['mbc_bsa_number'],
-                    'adult_id': mbc_assignment['mbc_adult_id']
-                },
-                'workload': {
-                    'total_assignments': mbc_assignment['total_assignments'],
-                    'active_assignments': mbc_assignment['active_assignments'],
-                    'completed_assignments': mbc_assignment['completed_assignments'],
-                    'unique_scouts_assigned': mbc_assignment['unique_scouts_assigned'],
-                    'unique_merit_badges': mbc_assignment['unique_merit_badges'],
-                    'merit_badges_counseling': mbc_assignment['merit_badges_counseling']
-                },
-                'merit_badges': []
-            }
-        
-        mbcs_dict[mbc_key]['merit_badges'].append({
-            'name': mbc_assignment['merit_badge_name'],
-            'year': mbc_assignment['merit_badge_year'],
-            'status': mbc_assignment['status'],
-            'requirements': mbc_assignment['requirements_raw'] or 'No requirements recorded'
-        })
-    
-    # Display Scout and MBC assignments summary
+    # Display Scout information
     st.write(f"**Scout:** {scout_name} (BSA #{scout_bsa_number})")
-    st.write(f"**Total MBCs:** {len(mbcs_dict)}")
-    st.write(f"**Total Merit Badge Assignments:** {len(mbcs)}")
+    st.write(f"**Merit Badges in Progress:** {len(badges_in_progress)}")
     
     st.markdown("---")
     
-    # Display each MBC and their assignments
-    for mbc_name, mbc_data in mbcs_dict.items():
-        with st.expander(f"👤 {mbc_name} - {mbc_data['mbc_info']['email']}", expanded=True):
-            
-            # MBC Workload Information
-            st.subheader("📊 MBC Current Workload")
-            col1, col2, col3, col4 = st.columns(4)
+    # Handle counselor assignment workflow
+    if st.session_state.assigning_counselor:
+        display_counselor_assignment_interface(scout_name, scout_id)
+        return
+    
+    # Display each merit badge in progress
+    for badge in badges_in_progress:
+        with st.container():
+            col1, col2, col3 = st.columns([3, 2, 2])
             
             with col1:
-                st.metric("Total Scouts", mbc_data['workload']['unique_scouts_assigned'])
-            with col2:
-                st.metric("Active Assignments", mbc_data['workload']['active_assignments'])
-            with col3:
-                st.metric("Completed Assignments", mbc_data['workload']['completed_assignments'])
-            with col4:
-                st.metric("Merit Badges", mbc_data['workload']['unique_merit_badges'])
-            
-            # All Merit Badges this MBC counsels
-            st.write("**All Merit Badges Counseled:**")
-            mb_badges = mbc_data['workload']['merit_badges_counseling']
-            # Use text area for better display of long text
-            st.text_area(
-                "Merit Badges",
-                value=mb_badges,
-                height=80,
-                key=f"mb_counseled_{mbc_data['mbc_info']['adult_id']}",
-                disabled=True,
-                label_visibility="collapsed"
-            )
-            
-            st.markdown("---")
-            
-            # Merit badges for this Scout with this MBC
-            st.subheader(f"🏅 Merit Badges with {scout_name}")
-            
-            for mb in mbc_data['merit_badges']:
-                mb_col1, mb_col2, mb_col3 = st.columns([3, 1, 2])
-                
-                with mb_col1:
-                    status_emoji = "✅" if mb['status'] == 'Completed' else "🔄"
-                    st.write(f"{status_emoji} **{mb['name']}** ({mb['year']})")
-                    
-                with mb_col2:
-                    if mb['status'] == 'Completed':
-                        st.success("Completed")
-                    else:
-                        st.info("In Progress")
-                
-                with mb_col3:
-                    # Display requirements with proper wrapping
-                    requirements_text = mb['requirements'] if mb['requirements'] else 'No requirements recorded'
+                st.write(f"🏅 **{badge['merit_badge_name']}**")
+                if badge['date_started']:
+                    st.caption(f"Started: {badge['date_started']}")
+                if badge['requirements_completed']:
                     st.text_area(
-                        "Requirements",
-                        value=requirements_text,
-                        height=60,
-                        key=f"req_{mbc_data['mbc_info']['adult_id']}_{mb['name']}",
+                        "Progress",
+                        value=badge['requirements_completed'],
+                        height=50,
+                        key=f"progress_{badge['progress_id']}",
                         disabled=True,
                         label_visibility="collapsed"
                     )
+            
+            with col2:
+                if badge['counselor_adult_id']:
+                    # Has counselor assigned
+                    st.write("**Counselor Assigned:**")
+                    st.write(f"👤 {badge['mbc_name']}")
+                    st.caption(f"✉️ {badge['mbc_email']}")
+                    
+                    # Show counselor workload
+                    if badge['total_assignments']:
+                        st.metric("Counselor's Total Assignments", badge['total_assignments'])
+                else:
+                    # No counselor assigned
+                    st.warning("⚠️ No counselor assigned")
+                    if st.button(
+                        "🔗 Assign Counselor", 
+                        key=f"assign_{badge['progress_id']}",
+                        help=f"Assign a counselor for {badge['merit_badge_name']}"
+                    ):
+                        st.session_state.assigning_counselor = {
+                            'badge': badge,
+                            'scout_name': scout_name,
+                            'scout_id': scout_id
+                        }
+                        st.rerun()
+            
+            with col3:
+                if badge['notes']:
+                    st.text_area(
+                        "Notes",
+                        value=badge['notes'],
+                        height=50,
+                        key=f"notes_{badge['progress_id']}",
+                        disabled=True,
+                        label_visibility="collapsed"
+                    )
+        
+        st.markdown("---")
     
     # Close button
-    st.markdown("---")
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         if st.button("✖️ Close", key="close_scout_modal", use_container_width=True):
             st.session_state.selected_scout = None
+            if 'assigning_counselor' in st.session_state:
+                del st.session_state.assigning_counselor
+            st.rerun()
+
+def display_counselor_assignment_interface(scout_name: str, scout_id: int):
+    """Display the counselor assignment interface for a specific merit badge."""
+    assignment_info = st.session_state.assigning_counselor
+    badge = assignment_info['badge']
+    
+    st.subheader(f"🔗 Assign Counselor for {badge['merit_badge_name']}")
+    st.write(f"**Scout:** {scout_name}")
+    st.write(f"**Merit Badge:** {badge['merit_badge_name']}")
+    
+    st.markdown("---")
+    
+    # Get available counselors for this merit badge
+    available_mbcs = get_available_mbcs_for_badge(badge['merit_badge_name'])
+    
+    if not available_mbcs:
+        st.warning(f"No counselors are currently available for {badge['merit_badge_name']}.")
+        st.info("Please contact your Scoutmaster to register additional counselors for this merit badge.")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("← Back", key="back_no_mbcs"):
+                st.session_state.assigning_counselor = None
+                st.rerun()
+        return
+    
+    st.write(f"**Available Counselors for {badge['merit_badge_name']}:** {len(available_mbcs)}")
+    st.write("*Counselors are sorted by current workload (least busy first)*")
+    
+    # Display available counselors with selection
+    selected_mbc_id = None
+    
+    for i, mbc in enumerate(available_mbcs):
+        with st.container():
+            col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+            
+            with col1:
+                st.write(f"👤 **{mbc['name']}**")
+                st.caption(f"✉️ {mbc['email']}")
+                st.caption(f"BSA #{mbc['bsa_number']}")
+            
+            with col2:
+                st.metric("Active Assignments", mbc['active_assignments'])
+                st.metric("Total Scouts", mbc['unique_scouts_assigned'])
+            
+            with col3:
+                st.metric("Total Assignments", mbc['total_assignments'])
+                st.metric("Merit Badges", mbc['unique_merit_badges'])
+            
+            with col4:
+                if st.button(
+                    "Select",
+                    key=f"select_mbc_{mbc['adult_id']}",
+                    help=f"Assign {mbc['name']} as counselor"
+                ):
+                    selected_mbc_id = mbc['adult_id']
+                    break
+        
+        st.markdown("---")
+    
+    # Handle counselor selection
+    if selected_mbc_id:
+        selected_mbc = next(mbc for mbc in available_mbcs if mbc['adult_id'] == selected_mbc_id)
+        
+        # Confirm assignment
+        st.success(f"Assign **{selected_mbc['name']}** as counselor for **{badge['merit_badge_name']}**?")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Confirm Assignment", key="confirm_assignment"):
+                # Perform the assignment
+                success = assign_counselor_to_scout(
+                    scout_id,
+                    badge['merit_badge_name'],
+                    selected_mbc_id
+                )
+                
+                if success:
+                    st.success(f"Successfully assigned {selected_mbc['name']} as counselor!")
+                    st.session_state.assigning_counselor = None
+                    st.rerun()
+                else:
+                    st.error("Failed to assign counselor. Please try again.")
+        
+        with col2:
+            if st.button("Cancel", key="cancel_assignment"):
+                selected_mbc_id = None
+                st.rerun()
+    
+    # Back button
+    st.markdown("---")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("← Back to Merit Badges", key="back_to_badges"):
+            st.session_state.assigning_counselor = None
             st.rerun()
 
 def refresh_mbc_workload_view():
