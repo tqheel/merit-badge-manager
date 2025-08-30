@@ -99,7 +99,7 @@ python database-access/mb_progress_parser.py data/merit_badge_report.csv --verbo
 
 #### 2. Test MBC Name Matching
 ```bash
-python database-access/mbc_name_matcher.py --database merit_badge_manager.db "Mike Johnson"
+python database-access/mbc_name_matcher.py --database database/merit_badge_manager.db "Mike Johnson"
 ```
 
 #### 3. Full Import Process
@@ -113,7 +113,7 @@ python database-access/import_mb_progress.py data/merit_badge_report.csv --auto-
 ```python
 from database_access.import_mb_progress import MeritBadgeProgressImporter
 
-importer = MeritBadgeProgressImporter("merit_badge_manager.db")
+importer = MeritBadgeProgressImporter("database/merit_badge_manager.db")
 success = importer.import_csv("merit_badge_report.csv")
 
 if success:
@@ -127,7 +127,7 @@ if success:
 ```python
 from database_access.mbc_name_matcher import MBCNameMatcher
 
-matcher = MBCNameMatcher("merit_badge_manager.db")
+matcher = MBCNameMatcher("database/merit_badge_manager.db")
 matches = matcher.find_matches("Mike Johnson", min_confidence=0.7)
 
 for match in matches:
@@ -235,13 +235,13 @@ For CSV files with >1000 records:
 # Weekly Merit Badge Progress Import
 
 # 1. Backup existing database
-cp merit_badge_manager.db merit_badge_manager_backup.db
+cp database/merit_badge_manager.db database/merit_badge_manager_backup.db
 
 # 2. Import new progress data
 python database-access/import_mb_progress.py data/weekly_mb_report.csv
 
 # 3. Generate management reports
-sqlite3 merit_badge_manager.db < scripts/generate_weekly_reports.sql
+sqlite3 database/merit_badge_manager.db < scripts/generate_weekly_reports.sql
 
 # 4. Email reports to leadership
 python scripts/email_reports.py

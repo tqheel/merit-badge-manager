@@ -294,7 +294,7 @@ source venv/bin/activate
 python database-access/import_mb_progress.py data/mb_report.csv --auto-match-threshold 0.9
 
 # Test MBC name matching against adult roster
-python database-access/mbc_name_matcher.py --database merit_badge_manager.db "Mike Johnson"
+python database-access/mbc_name_matcher.py --database database/merit_badge_manager.db "Mike Johnson"
 
 # Parse CSV file and view structure (validation only)
 python database-access/mb_progress_parser.py data/mb_report.csv --verbose
@@ -310,7 +310,7 @@ python database-access/mb_progress_parser.py data/mb_report.csv --verbose
 ### Database Views for Merit Badge Management
 ```bash
 # Connect to database to view imported data
-sqlite3 merit_badge_manager.db
+sqlite3 database/merit_badge_manager.db
 
 # View comprehensive merit badge status
 sqlite> SELECT * FROM merit_badge_status_view LIMIT 5;
@@ -648,8 +648,8 @@ sqlite> .quit
 
 ### Database Files
 
-- **Production Database**: `merit_badge_manager.db` (main application database with both adult and youth schemas)
-- **Test Database**: `test_merit_badge_manager.db` (created by test script with sample data)
+- **Production Database**: `database/merit_badge_manager.db` (main application database with both adult and youth schemas)
+- **Test Database**: `ui-tests/test_merit_badge_manager.db` (created by test script with sample data)
 - **Adult Schema File**: `database/create_adult_roster_schema.sql` (adult database schema)
 - **Youth Schema File**: `database/youth_database_schema.sql` (youth database schema)
 - **Setup Script**: `database/setup_database.py` (automated database creation)

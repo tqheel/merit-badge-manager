@@ -52,4 +52,4 @@ The Merit Badge Manager includes a web-based user interface built with Streamlit
 
 - The application requires Python 3.12 and the dependencies listed in `requirements.txt`
 - CSV files should be placed in the `data/` directory with names matching your configuration
-- The SQLite database (`merit_badge_manager.db`) is automatically created during first import
+- The SQLite database (`database/merit_badge_manager.db`) is automatically created during first import
