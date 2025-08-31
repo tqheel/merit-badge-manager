@@ -75,12 +75,6 @@ class TestDatabaseConsolidation(unittest.TestCase):
         try:
             cursor = conn.cursor()
             
-            # Check that adults_missing_data view exists and has some data
-            cursor.execute("SELECT COUNT(*) FROM adults_missing_data")
-            missing_adults_count = cursor.fetchone()[0]
-            self.assertGreaterEqual(missing_adults_count, 0, 
-                           "adults_missing_data should be accessible (could have 0 or more records)")
-            
             # Check that main tables have data
             cursor.execute("SELECT COUNT(*) FROM adults")
             adults_count = cursor.fetchone()[0]

@@ -858,7 +858,6 @@ if selected_view:
 
     # Add view description
     view_descriptions = {
-        'adults_missing_data': 'Adults with missing required information',
         'training_expiration_summary': 'Training status and expiration dates',
         'merit_badge_counselors': 'Merit badge counselor assignments',
         'current_positions': 'Current adult positions',

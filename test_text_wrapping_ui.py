@@ -62,7 +62,7 @@ def test_text_wrapping_in_database_views(page, base_url):
         print("⚠️  Merit Badge Counselors view not available")
     
     # Test other views with likely long text content
-    other_views_to_test = ["registered_volunteers", "adults_missing_data"]
+    other_views_to_test = ["registered_volunteers"]
     
     for view_name in other_views_to_test:
         view_option = page.locator(f'option:has-text("{view_name}")').first

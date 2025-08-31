@@ -181,7 +181,7 @@ class TestDatabaseSchema:
         views = [row[0] for row in cursor.fetchall()]
         
         expected_views = [
-            'adults_missing_data', 'current_positions', 
+            'current_positions', 
             'merit_badge_counselors', 'training_expiration_summary'
         ]
         
@@ -473,12 +473,6 @@ class TestFakeDataGeneration:
         
         # Insert some test data first
         self.test_insert_fake_data()
-        
-        # Test adults_missing_data view
-        cursor.execute("SELECT COUNT(*) FROM adults_missing_data")
-        missing_count = cursor.fetchone()[0]
-        # Should be 0 since our fake data is complete
-        assert missing_count == 0, "Should have no missing data with complete fake data"
         
         # Test current_positions view
         cursor.execute("SELECT COUNT(*) FROM current_positions")

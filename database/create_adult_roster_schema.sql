@@ -117,28 +117,10 @@ END;
 -- =============================================================================
 
 -- Drop existing views if they exist to ensure clean recreation
-DROP VIEW IF EXISTS adults_missing_data;
 DROP VIEW IF EXISTS training_expiration_summary;
 DROP VIEW IF EXISTS merit_badge_counselors;
 DROP VIEW IF EXISTS current_positions;
 DROP VIEW IF EXISTS registered_volunteers;
-
--- View to identify adults with missing required information
-CREATE VIEW adults_missing_data AS
-SELECT 
-    id,
-    first_name,
-    last_name,
-    bsa_number,
-    CASE WHEN email IS NULL OR email = '' THEN 'Missing Email' END AS email_issue,
-    CASE WHEN email = 'changeyouremail@scoutbook.com' THEN 'Placeholder Email' END AS email_placeholder,
-    CASE WHEN date_joined IS NULL THEN 'Missing Join Date' END AS join_date_issue,
-    CASE WHEN unit_number IS NULL OR unit_number = '' THEN 'Missing Unit Number' END AS unit_issue
-FROM adults
-WHERE 
-    email IS NULL OR email = '' OR email = 'changeyouremail@scoutbook.com'
-    OR date_joined IS NULL
-    OR unit_number IS NULL OR unit_number = '';
 
 -- View to show training expiration summary
 CREATE VIEW training_expiration_summary AS
