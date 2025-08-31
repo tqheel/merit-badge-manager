@@ -75,7 +75,7 @@ python -m pytest tests/test_database_schema.py::TestDatabaseSchema::test_schema_
 ### Manual SQL Execution
 ```bash
 # Using sqlite3 command line
-sqlite3 merit_badge_manager.db < db-scripts/create_adult_roster_schema.sql
+sqlite3 database/merit_badge_manager.db < database/create_adult_roster_schema.sql
 ```
 
 ### Command Line Options
@@ -83,7 +83,7 @@ sqlite3 merit_badge_manager.db < db-scripts/create_adult_roster_schema.sql
 python db-scripts/setup_database.py --help
 
 Options:
-  --database, -d    Database file path (default: merit_badge_manager.db)
+  --database, -d    Database file path (default: database/merit_badge_manager.db)
   --verify, -v      Verify schema after creation
   --force, -f       Force recreation even if database exists
 ```

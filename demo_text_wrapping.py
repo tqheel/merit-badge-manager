@@ -14,12 +14,18 @@ def demonstrate_text_wrapping_fix():
     print("🎯 Demonstrating Text Wrapping Fix for Issue #39")
     print("=" * 55)
     
-    db_path = "merit_badge_manager.db"
-    if not Path(db_path).exists():
+    # Use centralized database path
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent / "web-ui"))
+    from database_utils import get_database_path
+    
+    db_path = get_database_path()
+    if not db_path.exists():
         print("❌ Database not found. Please run setup_test_database.py first.")
         return False
     
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(str(db_path))
     
     print("\n1. 📊 Merit Badge Counselors View (Before/After)")
     print("-" * 50)

@@ -22,9 +22,11 @@ class TestManualMBCMatchingUI:
     @pytest.fixture(autouse=True)
     def setup_test_data(self):
         """Set up test database with unmatched MBC names."""
+        from test_database_utils import get_test_database_path, get_isolated_test_database_path
+        
         # Create test database from existing test database
-        source_db = Path("test_merit_badge_manager.db")
-        target_db = Path("merit_badge_manager.db")
+        source_db = get_isolated_test_database_path()
+        target_db = get_test_database_path()
         
         if source_db.exists():
             shutil.copy(source_db, target_db)
@@ -278,8 +280,10 @@ class TestManualMBCMatchingUI:
     
     def test_no_unmatched_names_scenario(self, page: Page):
         """Test behavior when there are no unmatched names."""
+        from test_database_utils import get_test_database_path
+        
         # Temporarily modify database to have no unmatched names
-        conn = sqlite3.connect("merit_badge_manager.db")
+        conn = sqlite3.connect(str(get_test_database_path()))
         cursor = conn.cursor()
         
         # Mark all as resolved
@@ -308,7 +312,7 @@ class TestManualMBCMatchingUI:
             
         finally:
             # Reset database state
-            conn = sqlite3.connect("merit_badge_manager.db")
+            conn = sqlite3.connect(str(get_test_database_path()))
             cursor = conn.cursor()
             cursor.execute("UPDATE unmatched_mbc_names SET is_resolved = 0")
             conn.commit()
@@ -316,8 +320,10 @@ class TestManualMBCMatchingUI:
     
     def test_pagination_display(self, page: Page):
         """Test pagination when there are many unmatched names."""
+        from test_database_utils import get_test_database_path
+        
         # Add more unmatched names to test pagination
-        conn = sqlite3.connect("merit_badge_manager.db")
+        conn = sqlite3.connect(str(get_test_database_path()))
         cursor = conn.cursor()
         
         # Add additional unmatched names
@@ -357,7 +363,7 @@ class TestManualMBCMatchingUI:
                 
         finally:
             # Clean up additional test data
-            conn = sqlite3.connect("merit_badge_manager.db")
+            conn = sqlite3.connect(str(get_test_database_path()))
             cursor = conn.cursor()
             cursor.execute("DELETE FROM unmatched_mbc_names WHERE mbc_name_raw LIKE 'Test Name %'")
             conn.commit()
@@ -365,8 +371,10 @@ class TestManualMBCMatchingUI:
     
     def test_error_handling_no_database(self, page: Page):
         """Test error handling when database doesn't exist."""
+        from test_database_utils import get_test_database_path
+        
         # Remove database temporarily
-        db_path = Path("merit_badge_manager.db")
+        db_path = get_test_database_path()
         backup_path = Path("merit_badge_manager_backup.db")
         
         if db_path.exists():

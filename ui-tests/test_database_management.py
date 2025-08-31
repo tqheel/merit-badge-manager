@@ -251,7 +251,8 @@ def test_database_file_permissions(page: Page, streamlit_app, clean_database):
         time.sleep(5)
         
         # Verify database file was created
-        db_path = Path("merit_badge_manager.db")
+        from test_database_utils import get_test_database_path
+        db_path = get_test_database_path()
         assert db_path.exists()
         
         # Test that operations work with the created file

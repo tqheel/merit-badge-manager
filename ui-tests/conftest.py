@@ -54,7 +54,9 @@ def streamlit_app():
 @pytest.fixture
 def clean_database():
     """Ensure clean database state for testing."""
-    db_path = Path("merit_badge_manager.db")
+    from test_database_utils import get_test_database_path
+    
+    db_path = get_test_database_path()
     backup_path = None
     
     # Backup existing database if it exists
@@ -75,13 +77,15 @@ def clean_database():
 def create_test_db():
     """Create a test database."""
     from database.setup_database import create_database_schema
-    db_path = "merit_badge_manager.db"
-    if Path(db_path).exists():
-        Path(db_path).unlink()
-    create_database_schema(db_path, include_youth=True)
+    from test_database_utils import get_test_database_path
+    
+    db_path = get_test_database_path()
+    if db_path.exists():
+        db_path.unlink()
+    create_database_schema(str(db_path), include_youth=True)
     yield
-    if Path(db_path).exists():
-        Path(db_path).unlink()
+    if db_path.exists():
+        db_path.unlink()
 
 
 @pytest.fixture

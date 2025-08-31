@@ -19,7 +19,13 @@ class TestTextWrapping(unittest.TestCase):
     
     def setUp(self):
         """Set up test environment."""
-        self.db_path = Path("merit_badge_manager.db")
+        # Use centralized database path
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent / "web-ui"))
+        from database_utils import get_database_path
+        
+        self.db_path = get_database_path()
         self.assertTrue(self.db_path.exists(), "Test database not found")
     
     def test_column_configuration_logic(self):
@@ -54,7 +60,7 @@ class TestTextWrapping(unittest.TestCase):
         
     def test_database_has_long_text_content(self):
         """Test that database contains content that benefits from text wrapping."""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(str(self.db_path))
         
         # Check merit badge counselors view
         df = pd.read_sql_query("SELECT * FROM merit_badge_counselors", conn)
@@ -121,7 +127,7 @@ class TestTextWrapping(unittest.TestCase):
     
     def test_merit_badge_progress_requirements_wrapping(self):
         """Test that merit badge progress requirements support text wrapping."""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(str(self.db_path))
         
         # Get requirements that are long enough to need wrapping
         query = """

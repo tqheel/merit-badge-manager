@@ -14,13 +14,15 @@ from pathlib import Path
 @pytest.fixture
 def sample_data_loaded(create_test_db):
     """Load sample data for testing the Scout MBC modal functionality."""
-    db_path = "merit_badge_manager.db"
+    from test_database_utils import get_test_database_path
+    
+    db_path = get_test_database_path()
     
     # Create the database schema first
     from database.setup_database import create_database_schema
-    create_database_schema(db_path, include_youth=True)
+    create_database_schema(str(db_path), include_youth=True)
     
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
     
     try:
@@ -230,13 +232,15 @@ def test_different_scouts_show_different_data(page: Page, streamlit_app, sample_
 @pytest.mark.ui
 def test_scout_modal_handles_no_in_progress_badges(page: Page, streamlit_app, clean_database):
     """Test that the modal handles scouts with no in-progress merit badges gracefully."""
-    db_path = "merit_badge_manager.db"
+    from test_database_utils import get_test_database_path
+    
+    db_path = get_test_database_path()
     
     # Create database with scout that has only completed badges
     from database.setup_database import create_database_schema
-    create_database_schema(db_path, include_youth=True)
+    create_database_schema(str(db_path), include_youth=True)
     
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
     
     try:
