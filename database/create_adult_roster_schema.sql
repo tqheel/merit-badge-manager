@@ -197,8 +197,6 @@ LEFT JOIN adult_merit_badges mb ON a.id = mb.adult_id
 WHERE mb.adult_id IS NULL;
 
 -- Check for expired training
--- SELECT * FROM current_training_status 
--- WHERE status = 'Expired' OR status = 'Expiring Soon';
 */
 
 -- =============================================================================
