@@ -182,7 +182,7 @@ class TestDatabaseSchema:
         
         expected_views = [
             'current_positions', 
-            'merit_badge_counselors', 'training_expiration_summary'
+            'merit_badge_counselors'
         ]
         
         for view in expected_views:
@@ -483,10 +483,5 @@ class TestFakeDataGeneration:
         cursor.execute("SELECT merit_badge_name, counselor_count FROM merit_badge_counselors ORDER BY merit_badge_name")
         mb_counselors = cursor.fetchall()
         assert len(mb_counselors) > 0, "Should have merit badge counselor assignments"
-        
-        # Test training_expiration_summary view
-        cursor.execute("SELECT COUNT(*) FROM training_expiration_summary")
-        training_summary_count = cursor.fetchone()[0]
-        assert training_summary_count > 0, "Should have training summary records"
         
         conn.close()

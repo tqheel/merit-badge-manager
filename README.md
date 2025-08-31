@@ -599,7 +599,6 @@ The database includes comprehensive schemas for both adult and youth roster mana
 The database includes several validation and reporting views for operational insights and data quality checks:
 
 **Adult Roster Views:**
-- **Training Expiration Summary View** (`training_expiration_summary`) - Shows training status (current, expired, expiring soon)
 - **Merit Badge Counselors View** (`merit_badge_counselors`) - Lists counselors available for each merit badge
 - **Current Positions View** (`current_positions`) - Shows current position assignments and tenure information  
 - **Registered Volunteers View** (`registered_volunteers`) - Shows all adults with BSA numbers and their active roles

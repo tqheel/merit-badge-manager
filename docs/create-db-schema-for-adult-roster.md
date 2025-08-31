@@ -162,9 +162,6 @@ CREATE INDEX idx_adult_positions_current ON adult_positions(is_current);
 
 The schema includes several views for data validation and reporting:
 
-### training_expiration_summary
-Shows training status (current, expired, expiring soon) for compliance tracking.
-
 ### merit_badge_counselors  
 Lists counselors available for each merit badge to enable efficient Scout assignments.
 
