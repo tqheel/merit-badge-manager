@@ -107,7 +107,7 @@ Eliminated all instances of:
 - `merit_badge_counselors` - Counselor lists now fully visible
 - `mbc_workload_summary` - Merit badge assignments in text areas
 - `registered_volunteers` - Complete position information
-- `adults_missing_data` - Full missing data details
+- `training_expiration_summary` - Full training status details
 
 ### Youth Views  
 - `active_scouts_with_positions` - Complete scout information
