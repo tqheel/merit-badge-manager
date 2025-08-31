@@ -185,8 +185,6 @@ def verify_schema(db_path: str, include_youth: bool = True, include_mb_progress:
         
         # Test adult views
         adult_view_queries = [
-            ("adults_missing_data", "SELECT COUNT(*) FROM adults_missing_data"),
-            ("training_expiration_summary", "SELECT COUNT(*) FROM training_expiration_summary"),
             ("merit_badge_counselors", "SELECT COUNT(*) FROM merit_badge_counselors"),
             ("current_positions", "SELECT COUNT(*) FROM current_positions")
         ]

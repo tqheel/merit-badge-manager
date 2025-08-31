@@ -117,48 +117,9 @@ END;
 -- =============================================================================
 
 -- Drop existing views if they exist to ensure clean recreation
-DROP VIEW IF EXISTS adults_missing_data;
-DROP VIEW IF EXISTS training_expiration_summary;
 DROP VIEW IF EXISTS merit_badge_counselors;
 DROP VIEW IF EXISTS current_positions;
 DROP VIEW IF EXISTS registered_volunteers;
-
--- View to identify adults with missing required information
-CREATE VIEW adults_missing_data AS
-SELECT 
-    id,
-    first_name,
-    last_name,
-    bsa_number,
-    CASE WHEN email IS NULL OR email = '' THEN 'Missing Email' END AS email_issue,
-    CASE WHEN email = 'changeyouremail@scoutbook.com' THEN 'Placeholder Email' END AS email_placeholder,
-    CASE WHEN date_joined IS NULL THEN 'Missing Join Date' END AS join_date_issue,
-    CASE WHEN unit_number IS NULL OR unit_number = '' THEN 'Missing Unit Number' END AS unit_issue
-FROM adults
-WHERE 
-    email IS NULL OR email = '' OR email = 'changeyouremail@scoutbook.com'
-    OR date_joined IS NULL
-    OR unit_number IS NULL OR unit_number = '';
-
--- View to show training expiration summary
-CREATE VIEW training_expiration_summary AS
-SELECT 
-    a.first_name,
-    a.last_name,
-    a.bsa_number,
-    t.training_code,
-    t.training_name,
-    t.expiration_date,
-    CASE 
-        WHEN t.expiration_date = '(does not expire)' THEN 'Never Expires'
-        WHEN t.expiration_date IS NULL THEN 'Unknown'
-        WHEN DATE(SUBSTR(t.expiration_date, -10)) < DATE('now') THEN 'Expired'
-        WHEN DATE(SUBSTR(t.expiration_date, -10)) <= DATE('now', '+30 days') THEN 'Expiring Soon'
-        ELSE 'Current'
-    END AS status
-FROM adults a
-JOIN adult_training t ON a.id = t.adult_id
-ORDER BY a.last_name, a.first_name, t.training_code;
 
 -- View to show available merit badge counselors by qualification
 -- Shows which merit badges have qualified counselors available to offer them
@@ -236,8 +197,6 @@ LEFT JOIN adult_merit_badges mb ON a.id = mb.adult_id
 WHERE mb.adult_id IS NULL;
 
 -- Check for expired training
-SELECT * FROM training_expiration_summary 
-WHERE status = 'Expired' OR status = 'Expiring Soon';
 */
 
 -- =============================================================================

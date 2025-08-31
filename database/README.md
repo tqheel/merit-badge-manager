@@ -113,8 +113,6 @@ Options:
 
 ### Validation Views
 
-- **adults_missing_data** - Identifies adults with missing required information
-- **training_expiration_summary** - Shows training status (current, expired, expiring soon)
 - **merit_badge_counselors** - Lists counselors available for each merit badge
 - **current_positions** - Shows current position assignments
 - **registered_volunteers** - Shows all adults with BSA numbers (registered volunteers) and their active roles
@@ -172,5 +170,5 @@ SELECT name FROM sqlite_master WHERE type='table';
 PRAGMA table_info(adults);
 
 -- Test data integrity
-SELECT * FROM adults_missing_data;
+SELECT * FROM current_positions;
 ```
