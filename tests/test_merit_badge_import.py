@@ -38,7 +38,7 @@ def test_merit_badge_counselor_import():
             writer.writerow(['First Name', 'Last Name', 'Email', 'City', 'State', 'Zip', 
                            'Age Category', 'Date Joined', 'BSA Number', 'Unit Number', 
                            'OA Info', 'Health Form Status', 'Swim Class', 'Swim Class Date', 
-                           'Positions Tenure', 'Merit Badge Counselor For'])
+                           'Positions (Tenure)', 'Merit Badge Counselor For'])
             writer.writerow(['John', 'Smith', 'john@test.com', 'TestCity', 'TX', '12345',
                            'Adult', '2020-01-01', '123456789', '123', '', 'Current', '', '',
                            'Scoutmaster (2y)', 'Archery;Aviation;Camping'])

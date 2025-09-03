@@ -379,7 +379,7 @@ class RosterImporter:
                             row.get('Health Form Status', '') or row.get('health_form_status', '') or None,
                             row.get('Swim Class', '') or row.get('swim_class', '') or None,
                             row.get('Swim Class Date', '') or row.get('swim_class_date', '') or None,
-                            row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None
+                            row.get('Positions (Tenure)', '') or row.get('positions_tenure', '') or None
                         ))
                         
                         # Check if the row was actually inserted
@@ -506,7 +506,7 @@ class RosterImporter:
                             row.get('City', '') or row.get('city', '') or None,
                             row.get('State', '') or row.get('state', '') or None,
                             row.get('Zip', '') or row.get('zip', '') or None,
-                            row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None,
+                            row.get('Positions (Tenure)', '') or row.get('positions_tenure', '') or None,
                             row.get('Training Raw', '') or row.get('training_raw', '') or None
                         ))
                         
@@ -522,7 +522,7 @@ class RosterImporter:
                                 scout_id = scout_id_result[0]
                                 
                                 # Process position data if it exists
-                                positions_tenure = row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None
+                                positions_tenure = row.get('Positions (Tenure)', '') or row.get('positions_tenure', '') or None
                                 if positions_tenure and positions_tenure.strip():
                                     self._import_scout_positions(cursor, scout_id, positions_tenure, first_name, last_name)
                         else:

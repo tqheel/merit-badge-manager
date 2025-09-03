@@ -41,7 +41,7 @@ def test_merit_badges_column_with_pipe_separators():
             writer.writerow(['First Name', 'Last Name', 'Email', 'City', 'State', 'Zip', 
                            'Age Category', 'Date Joined', 'BSA Number', 'Unit Number', 
                            'OA Info', 'Health Form Status', 'Swim Class', 'Swim Class Date', 
-                           'Positions Tenure', 'Merit Badges'])
+                           'Positions (Tenure)', 'Merit Badges'])
             writer.writerow(['John', 'Smith', 'john@test.com', 'TestCity', 'TX', '12345',
                            'Adult', '2020-01-01', '123456789', '123', '', 'Current', '', '',
                            'Scoutmaster (2y)', 'Archery | Aviation | Camping'])
@@ -130,7 +130,7 @@ def test_merit_badges_column_after_fix():
             writer.writerow(['First Name', 'Last Name', 'Email', 'City', 'State', 'Zip', 
                            'Age Category', 'Date Joined', 'BSA Number', 'Unit Number', 
                            'OA Info', 'Health Form Status', 'Swim Class', 'Swim Class Date', 
-                           'Positions Tenure', 'Merit Badges'])
+                           'Positions (Tenure)', 'Merit Badges'])
             writer.writerow(['John', 'Smith', 'john@test.com', 'TestCity', 'TX', '12345',
                            'Adult', '2020-01-01', '123456789', '123', '', 'Current', '', '',
                            'Scoutmaster (2y)', 'Archery | Aviation | Camping'])
