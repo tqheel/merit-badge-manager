@@ -52,6 +52,7 @@ def create_database_schema(db_path: str = "merit_badge_manager.db", include_yout
         with open(mb_progress_sql_file, 'r') as f:
             mb_progress_sql_script = f.read()
     
+    conn = None
     try:
         # Connect to database (creates file if it doesn't exist)
         print(f"Creating database: {db_path}")

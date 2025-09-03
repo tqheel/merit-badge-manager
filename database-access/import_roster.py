@@ -219,15 +219,16 @@ class RosterImporter:
         """
         try:
             import time
-            db_path = "database/merit_badge_manager.db"
+            db_path = self.project_root / "database" / "merit_badge_manager.db"
+            db_path_str = str(db_path)
             
             # First, try to close any existing connections by attempting a dummy connection
             # This helps ensure no lingering connections are holding locks
-            if os.path.exists(db_path):
+            if os.path.exists(db_path_str):
                 try:
                     # Try to connect and immediately close to flush any pending operations
                     import sqlite3
-                    conn = sqlite3.connect(db_path, timeout=1.0)
+                    conn = sqlite3.connect(db_path_str, timeout=1.0)
                     conn.close()
                     time.sleep(0.1)  # Brief pause to allow cleanup
                 except:
@@ -235,8 +236,8 @@ class RosterImporter:
                 
                 # Remove existing database if it exists
                 try:
-                    os.remove(db_path)
-                    print(f"   🗑️  Removed existing database: {db_path}")
+                    os.remove(db_path_str)
+                    print(f"   🗑️  Removed existing database: {db_path_str}")
                     time.sleep(0.1)  # Brief pause after deletion
                 except FileNotFoundError:
                     pass  # File already gone, that's fine
@@ -249,7 +250,7 @@ class RosterImporter:
             
             # Create new database with schema
             print(f"   🏗️  Creating new database schema...")
-            success = create_database_schema(db_path, include_youth=True)
+            success = create_database_schema(db_path_str, include_youth=True)
             
             if not success:
                 print(f"❌ Failed to create database schema")
@@ -257,13 +258,13 @@ class RosterImporter:
             
             # Verify the schema
             print(f"   🔍 Verifying database schema...")
-            verify_success = verify_schema(db_path, include_youth=True)
+            verify_success = verify_schema(db_path_str, include_youth=True)
             
             if not verify_success:
                 print(f"❌ Database schema verification failed")
                 return False
             
-            print(f"   ✅ Database recreated successfully: {db_path}")
+            print(f"   ✅ Database recreated successfully: {db_path_str}")
             return True
             
         except Exception as e:
