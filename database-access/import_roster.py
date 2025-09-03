@@ -280,11 +280,12 @@ class RosterImporter:
             True if successful, False otherwise
         """
         try:
-            db_path = "database/merit_badge_manager.db"
+            db_path = self.project_root / "database" / "merit_badge_manager.db"
+            db_path_str = str(db_path)
             
             # Check if database exists - if not, this might be a test scenario with mocked database creation
-            if not os.path.exists(db_path):
-                print(f"   ⚠️  Database not found: {db_path} - may be a test scenario")
+            if not os.path.exists(db_path_str):
+                print(f"   ⚠️  Database not found: {db_path_str} - may be a test scenario")
                 return True  # Return success for test scenarios
             
             adult_file = self.output_dir / "adult_roster.csv"
@@ -296,7 +297,7 @@ class RosterImporter:
             # Import adult data if file exists
             if adult_file.exists():
                 print(f"   📊 Importing adult data from {adult_file}...")
-                adult_count = self._import_adult_data(str(adult_file))
+                adult_count = self._import_adult_data(str(adult_file), db_path_str)
                 print(f"   ✅ Imported {adult_count} adult records")
             else:
                 print(f"   ⚠️  Adult data file not found: {adult_file}")
@@ -304,7 +305,7 @@ class RosterImporter:
             # Import youth data if file exists  
             if youth_file.exists():
                 print(f"   📊 Importing youth data from {youth_file}...")
-                youth_count = self._import_youth_data(str(youth_file))
+                youth_count = self._import_youth_data(str(youth_file), db_path_str)
                 print(f"   ✅ Imported {youth_count} scout records")
             else:
                 print(f"   ⚠️  Youth data file not found: {youth_file}")
@@ -320,18 +321,20 @@ class RosterImporter:
             self.logger.error(f"Data import failed: {e}")
             return False
     
-    def _import_adult_data(self, csv_file_path: str) -> int:
+    def _import_adult_data(self, csv_file_path: str, db_path: str = None) -> int:
         """
         Import adult data from CSV file into adults table.
         Automatically skips duplicate BSA numbers using database constraints.
         
         Args:
             csv_file_path: Path to the adult CSV file
+            db_path: Path to the database file (uses project_root if not provided)
             
         Returns:
             Number of records imported
         """
-        db_path = "database/merit_badge_manager.db"
+        if db_path is None:
+            db_path = str(self.project_root / "database" / "merit_badge_manager.db")
         
         if not os.path.exists(db_path):
             raise Exception(f"Database not found: {db_path}")
@@ -439,18 +442,20 @@ class RosterImporter:
         finally:
             conn.close()
     
-    def _import_youth_data(self, csv_file_path: str) -> int:
+    def _import_youth_data(self, csv_file_path: str, db_path: str = None) -> int:
         """
         Import youth data from CSV file into scouts table.
         Automatically skips duplicate BSA numbers using database constraints.
         
         Args:
             csv_file_path: Path to the youth CSV file
+            db_path: Path to the database file (uses project_root if not provided)
             
         Returns:
             Number of records imported
         """
-        db_path = "database/merit_badge_manager.db"
+        if db_path is None:
+            db_path = str(self.project_root / "database" / "merit_badge_manager.db")
         
         if not os.path.exists(db_path):
             raise Exception(f"Database not found: {db_path}")
