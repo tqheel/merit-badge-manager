@@ -52,6 +52,7 @@ def create_database_schema(db_path: str = "merit_badge_manager.db", include_yout
         with open(mb_progress_sql_file, 'r') as f:
             mb_progress_sql_script = f.read()
     
+    conn = None
     try:
         # Connect to database (creates file if it doesn't exist)
         print(f"Creating database: {db_path}")
@@ -207,7 +208,8 @@ def verify_schema(db_path: str, include_youth: bool = True, include_mb_progress:
                 ("advancement_progress_by_rank", "SELECT COUNT(*) FROM advancement_progress_by_rank"),
                 ("primary_parent_contacts", "SELECT COUNT(*) FROM primary_parent_contacts"),
                 ("scout_training_expiration_summary", "SELECT COUNT(*) FROM scout_training_expiration_summary"),
-                ("patrol_assignments", "SELECT COUNT(*) FROM patrol_assignments")
+                ("patrol_assignments", "SELECT COUNT(*) FROM patrol_assignments"),
+                ("current_por_scouts", "SELECT COUNT(*) FROM current_por_scouts")
             ]
             
             for view_name, query in youth_view_queries:

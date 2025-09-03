@@ -190,6 +190,7 @@ DROP VIEW IF EXISTS advancement_progress_by_rank;
 DROP VIEW IF EXISTS primary_parent_contacts;
 DROP VIEW IF EXISTS scout_training_expiration_summary;
 DROP VIEW IF EXISTS patrol_assignments;
+DROP VIEW IF EXISTS current_por_scouts;
 
 -- View to identify scouts with missing required information
 CREATE VIEW scouts_missing_data AS
@@ -327,6 +328,23 @@ FROM scouts
 WHERE patrol_name IS NOT NULL AND patrol_name != ''
 GROUP BY patrol_name
 ORDER BY active_scouts DESC, patrol_name;
+
+-- View to show current POR (Position of Responsibility) scouts
+CREATE VIEW current_por_scouts AS
+SELECT 
+    s.first_name,
+    s.last_name,
+    s.bsa_number,
+    s.rank,
+    s.patrol_name,
+    sp.position_title,
+    sp.patrol_name as position_patrol,
+    sp.tenure_info,
+    s.activity_status
+FROM scouts s
+JOIN scout_positions sp ON s.id = sp.scout_id AND sp.is_current = 1
+WHERE s.activity_status = 'Active'
+ORDER BY s.last_name, s.first_name, sp.position_title;
 
 -- =============================================================================
 -- SAMPLE DATA VALIDATION QUERIES (commented for reference)

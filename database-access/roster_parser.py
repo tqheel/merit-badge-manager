@@ -8,6 +8,7 @@ with adult and youth member sections, index columns, and varying formats.
 import csv
 import os
 import logging
+import re
 from typing import List, Dict, Tuple, Optional
 from pathlib import Path
 
@@ -279,6 +280,128 @@ class RosterParser:
             rows = list(reader)
             # Subtract 1 for header row if file has content
             return max(0, len(rows) - 1) if rows else 0
+
+    def parse_scout_positions(self, positions_tenure_raw: str) -> List[Dict[str, str]]:
+        """
+        Parse scout position data from the "Positions (Tenure)" column.
+        
+        Handles formats like:
+        - "Webmaster (5m 9d)"
+        - "Patrol Leader [ Anonymous Message] Patrol (5m 9d)"
+        - "Assistant Patrol Leader [ Anonymous Message] Patrol (5m 9d)"
+        - "Senior Patrol Leader (2y 3m) | Scribe [Dragon Fruit Patrol] (11m 3d)"
+        
+        Args:
+            positions_tenure_raw: Raw position data from CSV column
+            
+        Returns:
+            List of dictionaries with parsed position data:
+            [
+                {
+                    'position_title': 'Patrol Leader',
+                    'patrol_name': 'Anonymous Message',
+                    'tenure_info': '(5m 9d)'
+                },
+                ...
+            ]
+        """
+        positions = []
+        
+        if not positions_tenure_raw or not positions_tenure_raw.strip():
+            return positions
+        
+        # Split multiple positions by pipe separator
+        position_items = [item.strip() for item in positions_tenure_raw.split('|') if item.strip()]
+        
+        for position_item in position_items:
+            parsed_position = self._parse_single_position(position_item)
+            if parsed_position:
+                # Filter out non-leadership positions (basic patrol membership)
+                if self._is_leadership_position(parsed_position['position_title']):
+                    positions.append(parsed_position)
+        
+        return positions
+    
+    def _parse_single_position(self, position_str: str) -> Optional[Dict[str, str]]:
+        """
+        Parse a single position string.
+        
+        Args:
+            position_str: Single position string like "Patrol Leader [ Anonymous Message] Patrol (5m 9d)"
+            
+        Returns:
+            Dictionary with position data or None if parsing fails
+        """
+        if not position_str or not position_str.strip():
+            return None
+        
+        position_str = position_str.strip()
+        
+        # Extract tenure information in parentheses at the end
+        tenure_match = re.search(r'\(([^)]+)\)\s*$', position_str)
+        tenure_info = f"({tenure_match.group(1)})" if tenure_match else ""
+        
+        # Remove tenure info from position string for further parsing
+        position_without_tenure = re.sub(r'\s*\([^)]+\)\s*$', '', position_str).strip()
+        
+        # Extract patrol name in brackets
+        patrol_match = re.search(r'\[\s*([^\]]+)\s*\]', position_without_tenure)
+        patrol_name = patrol_match.group(1).strip() if patrol_match else ""
+        
+        # Remove patrol info and "Patrol" suffix to get position title
+        position_title = re.sub(r'\[\s*[^\]]+\s*\]', '', position_without_tenure).strip()
+        position_title = re.sub(r'\s+Patrol\s*$', '', position_title).strip()
+        
+        if not position_title:
+            return None
+        
+        return {
+            'position_title': position_title,
+            'patrol_name': patrol_name,
+            'tenure_info': tenure_info
+        }
+    
+    def _is_leadership_position(self, position_title: str) -> bool:
+        """
+        Determine if a position title represents a leadership position.
+        
+        Args:
+            position_title: Position title to check
+            
+        Returns:
+            True if it's a leadership position, False otherwise
+        """
+        if not position_title:
+            return False
+        
+        position_title_lower = position_title.lower().strip()
+        
+        # Filter out basic patrol membership (not leadership positions)
+        non_leadership_positions = {
+            'scouts bsa',
+            'scout',
+            'member',
+            'patrol member'
+        }
+        
+        if position_title_lower in non_leadership_positions:
+            return False
+        
+        # Leadership positions typically include these titles
+        leadership_indicators = [
+            'leader', 'patrol leader', 'assistant patrol leader', 'senior patrol leader',
+            'scribe', 'historian', 'librarian', 'chaplain aide', 'den chief',
+            'instructor', 'webmaster', 'quartermaster', 'bugler', 'troop guide',
+            'order of the arrow representative', 'oa representative', 'junior assistant scoutmaster'
+        ]
+        
+        # Check if position contains any leadership indicators
+        for indicator in leadership_indicators:
+            if indicator in position_title_lower:
+                return True
+        
+        # Default to True for unrecognized positions (better to include than exclude)
+        return True
 
 
 def main():

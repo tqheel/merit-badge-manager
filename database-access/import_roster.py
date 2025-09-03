@@ -219,15 +219,16 @@ class RosterImporter:
         """
         try:
             import time
-            db_path = "database/merit_badge_manager.db"
+            db_path = self.project_root / "database" / "merit_badge_manager.db"
+            db_path_str = str(db_path)
             
             # First, try to close any existing connections by attempting a dummy connection
             # This helps ensure no lingering connections are holding locks
-            if os.path.exists(db_path):
+            if os.path.exists(db_path_str):
                 try:
                     # Try to connect and immediately close to flush any pending operations
                     import sqlite3
-                    conn = sqlite3.connect(db_path, timeout=1.0)
+                    conn = sqlite3.connect(db_path_str, timeout=1.0)
                     conn.close()
                     time.sleep(0.1)  # Brief pause to allow cleanup
                 except:
@@ -235,8 +236,8 @@ class RosterImporter:
                 
                 # Remove existing database if it exists
                 try:
-                    os.remove(db_path)
-                    print(f"   🗑️  Removed existing database: {db_path}")
+                    os.remove(db_path_str)
+                    print(f"   🗑️  Removed existing database: {db_path_str}")
                     time.sleep(0.1)  # Brief pause after deletion
                 except FileNotFoundError:
                     pass  # File already gone, that's fine
@@ -249,7 +250,7 @@ class RosterImporter:
             
             # Create new database with schema
             print(f"   🏗️  Creating new database schema...")
-            success = create_database_schema(db_path, include_youth=True)
+            success = create_database_schema(db_path_str, include_youth=True)
             
             if not success:
                 print(f"❌ Failed to create database schema")
@@ -257,13 +258,13 @@ class RosterImporter:
             
             # Verify the schema
             print(f"   🔍 Verifying database schema...")
-            verify_success = verify_schema(db_path, include_youth=True)
+            verify_success = verify_schema(db_path_str, include_youth=True)
             
             if not verify_success:
                 print(f"❌ Database schema verification failed")
                 return False
             
-            print(f"   ✅ Database recreated successfully: {db_path}")
+            print(f"   ✅ Database recreated successfully: {db_path_str}")
             return True
             
         except Exception as e:
@@ -379,7 +380,7 @@ class RosterImporter:
                             row.get('Health Form Status', '') or row.get('health_form_status', '') or None,
                             row.get('Swim Class', '') or row.get('swim_class', '') or None,
                             row.get('Swim Class Date', '') or row.get('swim_class_date', '') or None,
-                            row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None
+                            row.get('Positions (Tenure)', '') or row.get('positions_tenure', '') or None
                         ))
                         
                         # Check if the row was actually inserted
@@ -506,13 +507,25 @@ class RosterImporter:
                             row.get('City', '') or row.get('city', '') or None,
                             row.get('State', '') or row.get('state', '') or None,
                             row.get('Zip', '') or row.get('zip', '') or None,
-                            row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None,
+                            row.get('Positions (Tenure)', '') or row.get('positions_tenure', '') or None,
                             row.get('Training Raw', '') or row.get('training_raw', '') or None
                         ))
                         
                         # Check if the row was actually inserted
                         if cursor.rowcount > 0:
                             imported_count += 1
+                            
+                            # Get the scout_id for position processing
+                            cursor.execute("SELECT id FROM scouts WHERE bsa_number = ?", (int(bsa_number),))
+                            scout_id_result = cursor.fetchone()
+                            
+                            if scout_id_result:
+                                scout_id = scout_id_result[0]
+                                
+                                # Process position data if it exists
+                                positions_tenure = row.get('Positions (Tenure)', '') or row.get('positions_tenure', '') or None
+                                if positions_tenure and positions_tenure.strip():
+                                    self._import_scout_positions(cursor, scout_id, positions_tenure, first_name, last_name)
                         else:
                             # Row was ignored due to duplicate BSA number
                             skipped_count += 1
@@ -585,6 +598,48 @@ class RosterImporter:
                 
         except Exception as e:
             print(f"   ⚠️  Warning: Error processing merit badges for {first_name} {last_name}: {e}")
+
+    def _import_scout_positions(self, cursor, scout_id: int, positions_tenure_raw: str, first_name: str, last_name: str):
+        """
+        Import scout position data for a scout.
+        
+        Args:
+            cursor: Database cursor
+            scout_id: ID of the scout in the scouts table
+            positions_tenure_raw: Raw position tenure data from CSV
+            first_name: Scout's first name (for logging)
+            last_name: Scout's last name (for logging)
+        """
+        try:
+            # Use the parser to parse position data
+            parser = RosterParser("dummy.csv", "dummy_output")
+            positions = parser.parse_scout_positions(positions_tenure_raw)
+            
+            position_count = 0
+            for position in positions:
+                try:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO scout_positions (
+                            scout_id, position_title, patrol_name, tenure_info, is_current
+                        ) VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        scout_id,
+                        position['position_title'],
+                        position['patrol_name'] if position['patrol_name'] else None,
+                        position['tenure_info'],
+                        1  # is_current = True for all imported positions
+                    ))
+                    
+                    if cursor.rowcount > 0:
+                        position_count += 1
+                except Exception as e:
+                    print(f"   ⚠️  Warning: Could not insert position '{position['position_title']}' for {first_name} {last_name}: {e}")
+            
+            if position_count > 0:
+                print(f"   📋 Added {position_count} leadership position(s) for {first_name} {last_name}")
+                
+        except Exception as e:
+            print(f"   ⚠️  Warning: Error processing positions for {first_name} {last_name}: {e}")
 
 
 def _main_impl(args_list=None):
