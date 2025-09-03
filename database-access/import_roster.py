@@ -513,6 +513,18 @@ class RosterImporter:
                         # Check if the row was actually inserted
                         if cursor.rowcount > 0:
                             imported_count += 1
+                            
+                            # Get the scout_id for position processing
+                            cursor.execute("SELECT id FROM scouts WHERE bsa_number = ?", (int(bsa_number),))
+                            scout_id_result = cursor.fetchone()
+                            
+                            if scout_id_result:
+                                scout_id = scout_id_result[0]
+                                
+                                # Process position data if it exists
+                                positions_tenure = row.get('Positions Tenure', '') or row.get('positions_tenure', '') or None
+                                if positions_tenure and positions_tenure.strip():
+                                    self._import_scout_positions(cursor, scout_id, positions_tenure, first_name, last_name)
                         else:
                             # Row was ignored due to duplicate BSA number
                             skipped_count += 1
@@ -585,6 +597,48 @@ class RosterImporter:
                 
         except Exception as e:
             print(f"   ⚠️  Warning: Error processing merit badges for {first_name} {last_name}: {e}")
+
+    def _import_scout_positions(self, cursor, scout_id: int, positions_tenure_raw: str, first_name: str, last_name: str):
+        """
+        Import scout position data for a scout.
+        
+        Args:
+            cursor: Database cursor
+            scout_id: ID of the scout in the scouts table
+            positions_tenure_raw: Raw position tenure data from CSV
+            first_name: Scout's first name (for logging)
+            last_name: Scout's last name (for logging)
+        """
+        try:
+            # Use the parser to parse position data
+            parser = RosterParser("dummy.csv", "dummy_output")
+            positions = parser.parse_scout_positions(positions_tenure_raw)
+            
+            position_count = 0
+            for position in positions:
+                try:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO scout_positions (
+                            scout_id, position_title, patrol_name, tenure_info, is_current
+                        ) VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        scout_id,
+                        position['position_title'],
+                        position['patrol_name'] if position['patrol_name'] else None,
+                        position['tenure_info'],
+                        1  # is_current = True for all imported positions
+                    ))
+                    
+                    if cursor.rowcount > 0:
+                        position_count += 1
+                except Exception as e:
+                    print(f"   ⚠️  Warning: Could not insert position '{position['position_title']}' for {first_name} {last_name}: {e}")
+            
+            if position_count > 0:
+                print(f"   📋 Added {position_count} leadership position(s) for {first_name} {last_name}")
+                
+        except Exception as e:
+            print(f"   ⚠️  Warning: Error processing positions for {first_name} {last_name}: {e}")
 
 
 def _main_impl(args_list=None):
