@@ -222,10 +222,17 @@ SELECT
     s.patrol_name,
     s.unit_number,
     COALESCE(s.activity_status, 'Unknown') as activity_status,
-    sp.position_title,
-    sp.tenure_info
+    GROUP_CONCAT(
+        CASE 
+            WHEN sp.position_title IS NOT NULL AND sp.position_title != '' 
+            THEN sp.position_title || COALESCE(' (' || sp.tenure_info || ')', '')
+            ELSE NULL 
+        END, 
+        ', '
+    ) as positions
 FROM scouts s
 LEFT JOIN scout_positions sp ON s.id = sp.scout_id AND sp.is_current = 1
+GROUP BY s.id, s.first_name, s.last_name, s.bsa_number, s.rank, s.patrol_name, s.unit_number, s.activity_status
 ORDER BY s.last_name, s.first_name;
 
 -- View to show merit badge progress summary
@@ -343,7 +350,9 @@ SELECT
     s.activity_status
 FROM scouts s
 JOIN scout_positions sp ON s.id = sp.scout_id AND sp.is_current = 1
-WHERE s.activity_status = 'Active'
+WHERE sp.position_title IS NOT NULL 
+    AND sp.position_title != ''
+    AND sp.position_title != 'No Position'
 ORDER BY s.last_name, s.first_name, sp.position_title;
 
 -- =============================================================================

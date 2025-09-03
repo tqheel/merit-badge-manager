@@ -814,8 +814,11 @@ def display_scouts_roster_with_modal(df: pd.DataFrame):
                 st.write(f"{status_color} {row['activity_status']}")
             
             with col6:
-                position = row['position_title'] or 'No Position'
-                st.caption(f"Position: {position}")
+                if row.get('positions') and row['positions']:
+                    # Show all positions for this scout (already concatenated by the view)
+                    st.caption(f"Positions: {row['positions']}")
+                else:
+                    st.caption("Position: No Position")
         
         st.markdown("---")
 
